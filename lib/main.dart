@@ -2,6 +2,7 @@
 import 'package:fast_order/screens/auth/register_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '/screens/auth/login_screen.dart';
 import '/screens/auth/role_selection_screen.dart';
@@ -26,7 +27,16 @@ import 'package:fast_order/services/auth_service.dart';
 import 'package:fast_order/services/restaurant_service.dart';
 import 'package:fast_order/services/order_service.dart';
 
-void main() {
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+void main() async {
+  await dotenv.load(fileName: ".env");
+  late final url = dotenv.env['SUPABASE_URL'];
+  late final key = dotenv.env['SUPABASE_KEY'];
+  await Supabase.initialize(
+    url: url!,
+    anonKey: key!,
+  );
   runApp(
     MultiProvider(
       providers: [
