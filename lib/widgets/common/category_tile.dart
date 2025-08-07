@@ -1,4 +1,3 @@
-// lib/widgets/common/category_tile.dart
 import 'package:flutter/material.dart';
 import '../../models/category.dart';
 
@@ -16,20 +15,38 @@ class CategoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).primaryColor;
+
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? Theme.of(context).primaryColor : Colors.grey[200],
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? primaryColor : Colors.grey[100],
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.4),
+                    offset: const Offset(0, 4),
+                    blurRadius: 10,
+                  ),
+                ]
+              : [],
+          border: Border.all(
+            color: isSelected ? primaryColor : Colors.grey.shade300,
+            width: 1.5,
+          ),
         ),
         child: Text(
           category.name,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.black,
-            fontWeight: FontWeight.w500,
+            color: isSelected ? Colors.white : Colors.grey[800],
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+            letterSpacing: 0.5,
           ),
         ),
       ),

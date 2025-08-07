@@ -13,56 +13,80 @@ class OrderStatusScreen extends StatelessWidget {
     final orderService = Provider.of<OrderService>(context);
 
     // Simulamos la obtención del estado del pedido
-    final orderStatus = 'preparing'; // En una app real, esto vendría del servicio
+    final orderStatus = 'preparing'; // Esto debería venir del servicio
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Estado del Pedido')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildStatusStep(
-                context,
-                title: 'Pedido Recibido',
-                isActive: true,
-                isCompleted: true,
+      backgroundColor: const Color(0xFFF9F9F9),
+      appBar: AppBar(
+        title: const Text('Estado del Pedido'),
+        backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+        child: Column(
+          children: [
+            _buildStatusStep(
+              context,
+              title: 'Pedido Recibido',
+              icon: Icons.receipt_long,
+              isActive: true,
+              isCompleted: true,
+            ),
+            _buildStatusLine(isActive: true),
+            _buildStatusStep(
+              context,
+              title: 'En Preparación',
+              icon: Icons.kitchen,
+              isActive: orderStatus == 'preparing',
+              isCompleted: orderStatus == 'preparing' || orderStatus == 'ready',
+            ),
+            _buildStatusLine(
+              isActive: orderStatus == 'preparing' || orderStatus == 'ready',
+            ),
+            _buildStatusStep(
+              context,
+              title: 'Listo para Recoger',
+              icon: Icons.check_circle,
+              isActive: orderStatus == 'ready',
+              isCompleted: orderStatus == 'ready',
+            ),
+            const SizedBox(height: 40),
+            Text(
+              'Orden #$orderId',
+              style: const TextStyle(
+                fontSize: 18,
+                color: Colors.black54,
               ),
-              _buildStatusLine(context, isActive: true),
-              _buildStatusStep(
-                context,
-                title: 'En Preparación',
-                isActive: orderStatus == 'preparing',
-                isCompleted: orderStatus == 'preparing' || orderStatus == 'ready',
+            ),
+            const SizedBox(height: 16),
+            if (orderStatus == 'preparing')
+              const Text(
+                'Estamos preparando tu pedido...',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-              _buildStatusLine(context,
-                  isActive: orderStatus == 'preparing' || orderStatus == 'ready'),
-              _buildStatusStep(
-                context,
-                title: 'Listo para Recoger',
-                isActive: orderStatus == 'ready',
-                isCompleted: orderStatus == 'ready',
-              ),
-              const SizedBox(height: 32),
-              Text(
-                'Orden #$orderId',
-                style: const TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 16),
-              if (orderStatus == 'preparing')
-                const Text(
-                  'Tu pedido está siendo preparado',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            const Spacer(),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pushNamedAndRemoveUntil(
+                      context, '/client/restaurants', (route) => false);
+                },
+                icon: const Icon(Icons.restaurant),
+                label: const Text('Volver a Restaurantes'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                    context, '/client/restaurants', (route) => false),
-                child: const Text('Volver a Restaurantes'),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -71,27 +95,33 @@ class OrderStatusScreen extends StatelessWidget {
   Widget _buildStatusStep(
     BuildContext context, {
     required String title,
+    required IconData icon,
     required bool isActive,
     required bool isCompleted,
   }) {
+    final color = isCompleted
+        ? Colors.green
+        : isActive
+            ? Colors.green.withOpacity(0.6)
+            : Colors.grey[300];
+
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 24,
-          height: 24,
+          margin: const EdgeInsets.only(top: 4),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isCompleted
-                ? Theme.of(context).primaryColor
-                : isActive
-                    ? Theme.of(context).primaryColor.withOpacity(0.5)
-                    : Colors.grey[300],
+            color: color,
           ),
-          child: isCompleted
-              ? const Icon(Icons.check, size: 16, color: Colors.white)
-              : null,
+          padding: const EdgeInsets.all(6),
+          child: Icon(
+            icon,
+            size: 20,
+            color: Colors.white,
+          ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
         Text(
           title,
           style: TextStyle(
@@ -104,14 +134,12 @@ class OrderStatusScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusLine(BuildContext context, {required bool isActive}) {
+  Widget _buildStatusLine({required bool isActive}) {
     return Container(
-      margin: const EdgeInsets.only(left: 11),
+      margin: const EdgeInsets.only(left: 11, top: 2, bottom: 2),
       width: 2,
       height: 30,
-      color: isActive
-          ? Theme.of(context).primaryColor
-          : Colors.grey[300],
+      color: isActive ? Colors.green : Colors.grey[300],
     );
   }
 }
