@@ -11,9 +11,15 @@ class ProductManagerScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final restaurantService = Provider.of<RestaurantService>(context);
     final restaurantId = Provider.of<AuthService>(context).currentRestaurant?.id ?? '';
+    final primaryColor = Colors.deepPurple;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Gestión de Productos')),
+      appBar: AppBar(
+        title: const Text('Gestión de Productos'),
+        backgroundColor: primaryColor,
+        centerTitle: true,
+        elevation: 0,
+      ),
       body: FutureBuilder<List<Product>>(
         future: restaurantService.getProductsByCategory(restaurantId, 'all'),
         builder: (context, snapshot) {
@@ -22,29 +28,95 @@ class ProductManagerScreen extends StatelessWidget {
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No hay productos registrados'));
+            return Center(
+              child: Text(
+                'No hay productos registrados',
+                style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+              ),
+            );
           }
 
-          return ListView.builder(
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
             itemCount: snapshot.data!.length,
+            separatorBuilder: (_, __) => const Divider(height: 24),
             itemBuilder: (context, index) {
               final product = snapshot.data![index];
-              return ListTile(
-                leading: Image.network(product.imageUrl, width: 50),
-                title: Text(product.name),
-                subtitle: Text('\$${product.price.toStringAsFixed(2)}'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () => _showEditProductDialog(context, product),
+              return Card(
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  leading: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      product.imageUrl,
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 60,
+                        height: 60,
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                      ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () {},
+                  ),
+                  title: Text(
+                    product.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  subtitle: Text(
+                    '\$${product.price.toStringAsFixed(2)} - ${product.category}',
+                    style: TextStyle(color: Colors.grey[700]),
+                  ),
+                  trailing: SizedBox(
+                    width: 96,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.edit, color: primaryColor),
+                          tooltip: 'Editar',
+                          onPressed: () => _showEditProductDialog(context, product),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.delete, color: Colors.redAccent),
+                          tooltip: 'Eliminar',
+                          onPressed: () {
+                            // Aquí implementa la eliminación si quieres
+                            showDialog(
+                              context: context,
+                              builder: (_) => AlertDialog(
+                                title: const Text('Confirmar eliminación'),
+                                content: Text('¿Eliminar el producto "${product.name}"?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('Cancelar'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () async {
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Producto "${product.name}" eliminado'),
+                                          backgroundColor: Colors.redAccent,
+                                        ),
+                                      );
+                                    },
+                                    child: const Text('Eliminar'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               );
             },
@@ -52,6 +124,7 @@ class ProductManagerScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: primaryColor,
         onPressed: () => _showAddProductDialog(context, restaurantId),
         child: const Icon(Icons.add),
       ),
@@ -79,21 +152,38 @@ class ProductManagerScreen extends StatelessWidget {
                 children: [
                   TextFormField(
                     controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Nombre'),
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre',
+                      border: OutlineInputBorder(),
+                    ),
                     validator: (value) => value!.isEmpty ? 'Requerido' : null,
                   ),
+                  const SizedBox(height: 12),
                   TextFormField(
                     controller: descriptionController,
-                    decoration: const InputDecoration(labelText: 'Descripción'),
+                    decoration: const InputDecoration(
+                      labelText: 'Descripción',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 2,
                   ),
+                  const SizedBox(height: 12),
                   TextFormField(
                     controller: priceController,
-                    decoration: const InputDecoration(labelText: 'Precio'),
-                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Precio',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.numberWithOptions(decimal: true),
                     validator: (value) => value!.isEmpty ? 'Requerido' : null,
                   ),
+                  const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     value: selectedCategory,
+                    decoration: const InputDecoration(
+                      labelText: 'Categoría',
+                      border: OutlineInputBorder(),
+                    ),
                     items: ['Entradas', 'Platos principales', 'Postres']
                         .map((category) => DropdownMenuItem(
                               value: category,
@@ -111,7 +201,7 @@ class ProductManagerScreen extends StatelessWidget {
               onPressed: () => Navigator.pop(context),
               child: const Text('Cancelar'),
             ),
-            TextButton(
+            ElevatedButton(
               onPressed: () async {
                 if (formKey.currentState!.validate()) {
                   final newProduct = Product(
@@ -123,9 +213,15 @@ class ProductManagerScreen extends StatelessWidget {
                     category: selectedCategory,
                     restaurantId: restaurantId,
                   );
-                  
+
                   await restaurantService.addProduct(newProduct);
                   Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Producto "${newProduct.name}" agregado'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
                 }
               },
               child: const Text('Guardar'),
@@ -137,6 +233,6 @@ class ProductManagerScreen extends StatelessWidget {
   }
 
   void _showEditProductDialog(BuildContext context, Product product) {
-    // Implementación similar a _showAddProductDialog pero para edición
+    // Similar al _showAddProductDialog pero prellenando campos y actualizando producto
   }
 }

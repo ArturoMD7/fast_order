@@ -9,38 +9,78 @@ class OrderConfirmationScreen extends StatelessWidget {
     final orderId = ModalRoute.of(context)!.settings.arguments as String;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Confirmación')),
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: AppBar(
+        title: const Text('Confirmación del Pedido'),
+        backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              const Icon(Icons.check_circle_outline,
-                  color: Colors.green, size: 100),
+              const Icon(
+                Icons.check_circle,
+                color: Colors.green,
+                size: 120,
+              ),
               const SizedBox(height: 24),
               const Text(
                 '¡Pedido Confirmado!',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               Text(
                 'Número de orden: #$orderId',
-                style: const TextStyle(fontSize: 18),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black54,
+                ),
               ),
               const SizedBox(height: 32),
               const Text(
-                'Tu pedido está siendo preparado',
-                style: TextStyle(fontSize: 16),
+                'Estamos preparando tu pedido.\nTe notificaremos cuando esté listo.',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 48),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                      context, '/client/order-status', (route) => false,
-                      arguments: orderId),
-                  child: const Text('Ver Estado del Pedido'),
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      '/client/order-status',
+                      (route) => false,
+                      arguments: orderId,
+                    );
+                  },
+                  icon: const Icon(Icons.restaurant_menu),
+                  label: const Text(
+                    'Ver Estado del Pedido',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 16.0, horizontal: 24.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
+                  ),
                 ),
               ),
             ],
