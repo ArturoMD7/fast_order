@@ -22,12 +22,12 @@ import '/screens/admin/product_manager_screen.dart';
 import '/screens/admin/restaurant_stats_screen.dart';
 import '/screens/admin/user_management_screen.dart';
 
-// En lib/main.dart
 import 'package:fast_order/services/auth_service.dart';
 import 'package:fast_order/services/restaurant_service.dart';
 import 'package:fast_order/services/order_service.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:fast_order/widgets/common/role_layout.dart';
 
 void main() async {
   await dotenv.load(fileName: ".env");
@@ -66,23 +66,68 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/role-selection': (context) => const RoleSelectionScreen(),
         // Cliente
-        '/client/restaurants': (context) => const RestaurantsScreen(),
-        '/client/restaurant-detail': (context) => const RestaurantDetailScreen(),
-        '/client/qr-scanner': (context) => const QRScannerScreen(),
-        '/client/menu': (context) => const MenuScreen(),
-        '/client/cart': (context) => const CartScreen(),
-        '/client/order-confirmation': (context) => const OrderConfirmationScreen(),
-        '/client/order-status': (context) => const OrderStatusScreen(),
+        '/client/restaurants': (context) => RoleLayout(
+              route: '/client/restaurants',
+              child: const RestaurantsScreen(),
+            ),
+        '/client/restaurant-detail': (context) => RoleLayout(
+              route: '/client/restaurant-detail',
+              child: const RestaurantDetailScreen(),
+            ),
+        '/client/qr-scanner': (context) => RoleLayout(
+              route: '/client/qr-scanner',
+              child: const QRScannerScreen(),
+            ),
+        '/client/menu': (context) => RoleLayout(
+              route: '/client/menu',
+              child: const MenuScreen(),
+            ),
+        '/client/cart': (context) => RoleLayout(
+              route: '/client/cart',
+              child: const CartScreen(),
+            ),
+        '/client/order-confirmation': (context) => RoleLayout(
+              route: '/client/order-confirmation',
+              child: const OrderConfirmationScreen(),
+            ),
+        '/client/order-status': (context) => RoleLayout(
+              route: '/client/order-status',
+              child: const OrderStatusScreen(),
+            ),
         // Trabajador
-        '/worker/home': (context) => const WorkerHomeScreen(),
-        '/worker/qr-generator': (context) => const WorkerQRGeneratorScreen(),
-        '/worker/active-orders': (context) => const ActiveOrdersScreen(),
-        '/worker/order-detail': (context) => const OrderDetailScreen(),
+        '/worker/home': (context) => RoleLayout(
+              route: '/worker/home',
+              child: const WorkerHomeScreen(),
+            ),
+        '/worker/qr-generator': (context) => RoleLayout(
+              route: '/worker/qr-generator',
+              child: const WorkerQRGeneratorScreen(),
+            ),
+        '/worker/active-orders': (context) => RoleLayout(
+              route: '/worker/active-orders',
+              child: const ActiveOrdersScreen(),
+            ),
+        '/worker/order-detail': (context) => RoleLayout(
+              route: '/worker/order-detail',
+              child: const OrderDetailScreen(),
+            ),
         // Admin
-        '/admin/home': (context) => const AdminHomeScreen(),
-        '/admin/product-manager': (context) => const ProductManagerScreen(),
-        '/admin/restaurant-stats': (context) => const RestaurantStatsScreen(),
-        '/admin/user-management': (context) => const UserManagementScreen(),
+        '/admin/home': (context) => RoleLayout(
+              route: '/admin/home',
+              child: const AdminHomeScreen(),
+            ),
+        '/admin/product-manager': (context) => RoleLayout(
+              route: '/admin/product-manager',
+              child: const ProductManagerScreen(),
+            ),
+        '/admin/restaurant-stats': (context) => RoleLayout(
+              route: '/admin/restaurant-stats',
+              child: const RestaurantStatsScreen(),
+            ),
+        '/admin/user-management': (context) => RoleLayout(
+              route: '/admin/user-management',
+              child: const UserManagementScreen(),
+            ),
       },
     );
   }

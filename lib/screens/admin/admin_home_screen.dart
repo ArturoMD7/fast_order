@@ -9,18 +9,11 @@ class AdminHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
-    final restaurant = authService.currentRestaurant!;
     final user = authService.currentUser!;
 
     final primaryColor = Colors.deepPurple;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(restaurant.name),
-        backgroundColor: primaryColor,
-        centerTitle: true,
-        elevation: 0,
-      ),
       drawer: Drawer(
         child: Column(
           children: [
