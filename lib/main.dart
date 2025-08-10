@@ -49,6 +49,18 @@ void main() async {
   );
 }
 
+final ColorScheme customColorScheme = const ColorScheme(
+  brightness: Brightness.light,
+  primary: Color(0xFFd84315),         // Deep orange (principal / botones)
+  onPrimary: Colors.white,            // Texto sobre color primario
+  secondary: Color(0xFF8bc34a),       // Green (acento / acciones secundarias)
+  onSecondary: Colors.white,
+  surface: Color(0xFFFFFFFF),         // Fondo de tarjetas
+  onSurface: Color(0xFF2e2e2e),
+  error: Color(0xFFd32f2f),           // Rojo error
+  onError: Colors.white,
+);
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -57,9 +69,26 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Restaurant App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+      theme: ThemeData.from(
+        colorScheme: customColorScheme,
+        textTheme: const TextTheme(),
+      ).copyWith(
+        appBarTheme: AppBarTheme(
+          backgroundColor: customColorScheme.primary,
+          foregroundColor: customColorScheme.onPrimary,
+        ),
+        floatingActionButtonTheme: FloatingActionButtonThemeData(
+          backgroundColor: customColorScheme.secondary,
+          foregroundColor: customColorScheme.onSecondary,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: customColorScheme.primary,
+            foregroundColor: customColorScheme.onPrimary,
+          ),
+        ),
       ),
+
       initialRoute: '/login',
       routes: {
         '/register': (context) => const RegisterScreen(),

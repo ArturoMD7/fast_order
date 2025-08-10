@@ -22,66 +22,82 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   static const String cliente = 'cliente';
   static const String administrador = 'administrador';
+  final supabase = Supabase.instance.client;
 
   Future<void> _registerUser() async {
-    if (!_formKey.currentState!.validate()) return;
+  if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+  setState(() => _isLoading = true);
 
-    try {
-      final supabase = Supabase.instance.client;
-      final response = await supabase.auth.signUp(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+  try {
+    // 1. Registrar en auth.users (autenticación)
+    final authResponse = await supabase.auth.signUp(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
 
-      if (response.user == null && response.session == null) {
-        throw Exception(response.toString());
-      }
-      int? restauranteId;
-      if (_selectedRole == administrador) {
-        final restaurantData = {
-          'nombre': _restaurantNameController.text.trim(),
-          'descripcion': _restaurantDescController.text.trim(),
-        };
-        final response = await supabase.from('Restaurantes').insert(restaurantData).select().single();
-        restauranteId = response['id'];
-      }
-      final userData = {
-        'nombre': _nameController.text.trim(),
-        'apellido': _firstNameController.text.trim(),
-        'email': _emailController.text.trim(),
-        'contrasena': _passwordController.text,
-        'num_telefono': _phoneController.text.trim(),
-        'rol': _selectedRole,
-        if (restauranteId != null) 'id_restaurante': restauranteId,
-      };
-      await supabase.from('Usuarios').insert(userData);
-      if (mounted) {
-        switch (_selectedRole) {
-          case cliente:
-            Navigator.pushReplacementNamed(context, '/client/restaurants');
-            break;
-          case administrador:
-            Navigator.pushReplacementNamed(context, '/login');
-            break;
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+    if (authResponse.user == null) {
+      throw Exception('Error al registrar usuario en autenticación');
     }
+
+    final userId = authResponse.user!.id;
+    int? restauranteId;
+
+    // 2. Si es administrador, crear restaurante primero
+    if (_selectedRole == administrador) {
+      final restaurantData = {
+        'nombre': _restaurantNameController.text.trim(),
+        'descripcion': _restaurantDescController.text.trim(),
+        'creado_por': userId,
+      };
+      
+      final restaurantResponse = await supabase
+        .from('Restaurantes')
+        .insert(restaurantData)
+        .select()
+        .single();
+      
+      restauranteId = restaurantResponse['id'] as int;
+    }
+
+    // 3. Registrar en la tabla Usuarios (SIN contraseña)
+    final userData = {
+      'id': userId,
+      'nombre': _nameController.text.trim(),
+      'apellidos': _firstNameController.text.trim(),
+      'email': _emailController.text.trim(),
+      'num_telefono': _phoneController.text.trim(),
+      'rol': _selectedRole,
+      if (restauranteId != null) 'id_restaurante': restauranteId,
+      'created_at': DateTime.now().toIso8601String(),
+    };
+
+    await supabase.from('Usuarios').insert(userData);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Registro exitoso! Por favor verifica tu email.')),
+      );
+      Navigator.pushReplacementNamed(context, '/login');
+    }
+  } on AuthException catch (e) {
+    _showErrorSnackBar(e.message);
+  } on PostgrestException catch (e) {
+    _showErrorSnackBar('Error en base de datos: ${e.message}');
+  } catch (e) {
+    _showErrorSnackBar('Error en registro: ${e.toString()}');
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
+  }
+}
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 4),
+      ),
+    );
   }
 
   @override
@@ -100,7 +116,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final trimmed = email.trim();
     return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(trimmed);
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -160,17 +175,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
           if (_selectedRole == administrador) ...[
             Text('Datos del Restaurante', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: accentColor)),
             const SizedBox(height: 10),
-            _buildInputField('Nombre del Restaurante', _restaurantNameController, true),
+            _buildInputField('Nombre del Restaurante*', _restaurantNameController, true),
             _buildInputField('Descripción del Restaurante', _restaurantDescController, false, maxLines: 3),
             const SizedBox(height: 20),
           ],
           Text('Datos Personales', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: accentColor)),
           const SizedBox(height: 10),
-          _buildInputField('Nombre', _nameController, true),
-          _buildInputField('Apellido(s)', _firstNameController, true),
-          _buildInputField('Email', _emailController, true, isEmail: true),
-          _buildInputField('Número de teléfono (Opcional)', _phoneController, false, keyboardType: TextInputType.phone),
-          _buildInputField('Contraseña', _passwordController, true, isPassword: true),
+          _buildInputField('Nombre*', _nameController, true),
+          _buildInputField('Apellido(s)*', _firstNameController, true),
+          _buildInputField('Email*', _emailController, true, isEmail: true),
+          _buildInputField('Número de teléfono', _phoneController, false, keyboardType: TextInputType.phone),
+          _buildInputField('Contraseña*', _passwordController, true, isPassword: true),
           const SizedBox(height: 20),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: primaryColor, minimumSize: const Size(double.infinity, 50)),
@@ -181,7 +196,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
           TextButton(
             onPressed: () => setState(() => _selectedRole = null),
-            child: const Text('Cambiar tipo de cuenta', style: TextStyle(color: Colors.green),),
+            child: const Text('Cambiar tipo de cuenta', style: TextStyle(color: Colors.green)),
           )
         ],
       ),
@@ -204,7 +219,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         validator: (value) {
           if (isRequired && (value == null || value.trim().isEmpty)) {
-            return 'Requerido';
+            return 'Este campo es obligatorio';
           }
           if (isEmail && !_isEmailValid(value!.trim())) {
             return 'Email inválido';
@@ -217,4 +232,4 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
   }
-} 
+}

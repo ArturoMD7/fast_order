@@ -15,9 +15,9 @@ class ClientNavBar extends StatelessWidget {
     return BottomNavigationBar(
       currentIndex: currentIndex,
       onTap: onTap,
-      items: const [
+      items: [
         BottomNavigationBarItem(
-          icon: Icon(Icons.restaurant),
+          icon: Icon(Icons.restaurant, color: Colors.amber,),
           label: 'Restaurantes',
         ),
         BottomNavigationBarItem(

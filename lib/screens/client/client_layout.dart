@@ -72,10 +72,6 @@ class _ClientLayoutState extends State<ClientLayout> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Cliente'),
-        automaticallyImplyLeading: false,
-      ),
       body: widget.child,
       bottomNavigationBar: ClientNavBar(
         currentIndex: _currentIndex,
