@@ -10,13 +10,35 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  late final TextEditingController _emailController = TextEditingController();
-  late final TextEditingController _passwordController = TextEditingController();
+  late final TextEditingController _emailController;
+  late final TextEditingController _passwordController;
   late final StreamSubscription<AuthState> _authStateSubscription;
   bool _isLoading = false;
   bool _redirecting = false;
   final _formKey = GlobalKey<FormState>();
   final supabase = Supabase.instance.client;
+
+  @override
+  void initState() {
+    _emailController = TextEditingController();
+    _passwordController = TextEditingController();
+    
+    _authStateSubscription = supabase.auth.onAuthStateChange.listen(
+      (data) {
+        if (_redirecting) return;
+        final session = data.session;
+        if (session != null) {
+          _redirecting = true;
+          _redirectBasedOnRole(session.user.id);
+        }
+      },
+      onError: (error) {
+        _showErrorSnackBar(error.toString());
+      },
+    );
+    
+    super.initState();
+  }
 
   Future<void> _signIn() async {
     if (!_formKey.currentState!.validate()) return;
@@ -33,51 +55,104 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Inicio de sesión exitoso')),
         );
-        Navigator.pushReplacementNamed(context, '/client/restaurants'); // o tu ruta principal
+
+        final userId = response.user?.id;
+        if (userId == null) throw Exception('Usuario inválido');
+
+        // Verificar y crear usuario en tabla personalizada si no existe
+        await _ensureUserExistsInProfileTable(userId);
+        await _redirectBasedOnRole(userId);
       }
     } on AuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message), backgroundColor: Colors.red),
-      );
+      _showErrorSnackBar(e.message);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
-      );
+      _showErrorSnackBar('Error al iniciar sesión: ${e.toString()}');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  @override
-  void initState() {
-    _authStateSubscription = supabase.auth.onAuthStateChange.listen(
-      (data) {
-        if (_redirecting) return;
+  Future<void> _ensureUserExistsInProfileTable(String userId) async {
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) throw Exception('Usuario no autenticado');
 
-        final session = data.session;
+      // Verificar si existe en la tabla Usuarios
+      final existingUser = await supabase
+        .from('Usuarios')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
 
-        if (session != null) {
-          _redirecting = true;
-          Navigator.pushNamed(context, '/admin/home');
+      if (existingUser == null) {
+        // Si no existe, lo creamos con datos básicos
+        await supabase.from('Usuarios').insert({
+          'id': userId,
+          'email': user.email,
+          'rol': 'cliente', // Rol por defecto
+          'nombre': 'Nuevo Usuario',
+          'created_at': DateTime.now().toIso8601String(),
+        });
+      }
+    } catch (e) {
+      throw Exception('Error al verificar perfil de usuario: ${e.toString()}');
+    }
+  }
+
+  Future<void> _redirectBasedOnRole(String userId) async {
+    try {
+      final userData = await supabase
+        .from('Usuarios')
+        .select('rol, id_restaurante')
+        .eq('id', userId)
+        .single();
+
+      final rol = userData['rol'] as String;
+
+      switch (rol) {
+        case 'administrador':
+          Navigator.pushReplacementNamed(context, '/admin/home');
+          break;
+        case 'cliente':
+          Navigator.pushReplacementNamed(context, '/client/restaurants');
+          break;
+        case 'trabajador':
+          Navigator.pushReplacementNamed(context, '/worker/home');
+          break;
+        default:
+          Navigator.pushReplacementNamed(context, '/complete-profile');
+      }
+    } on PostgrestException catch (e) {
+      if (e.code == 'PGRST116') { // Código para "no encontrado"
+        await supabase.auth.signOut();
+        _showErrorSnackBar('Por favor completa tu registro');
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/complete-profile');
         }
-      },
-      onError: (e) {
-        if (e is AuthException) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.message), backgroundColor: Colors.red),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.message), backgroundColor: Colors.red),
-          );
-        }
-      },
-    );
-    super.initState();
+      } else {
+        throw Exception('Error al obtener datos del usuario: ${e.message}');
+      }
+    } catch (e) {
+      await supabase.auth.signOut();
+      _showErrorSnackBar('Error al redirigir: ${e.toString()}');
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
   }
 
   @override
   void dispose() {
+    _authStateSubscription.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -117,12 +192,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: primaryColor,
                       ),
                     ),
-                    Text('Ordena y asegura tu pedido',
-                    style: TextStyle(
+                    Text(
+                      'Ordena y asegura tu pedido',
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,  
                         color: secondaryColor,
-                      ),),
+                      ),
+                    ),
                     const SizedBox(height: 20),
                     TextFormField(
                       controller: _emailController,
