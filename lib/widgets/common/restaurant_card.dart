@@ -20,7 +20,7 @@ class RestaurantCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 5,
       shadowColor: Colors.black26,
-      clipBehavior: Clip.antiAlias, // Para que la imagen tenga bordes redondeados
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         splashColor: theme.colorScheme.primary.withOpacity(0.2),
@@ -28,25 +28,12 @@ class RestaurantCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Image.network(
-                restaurant.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: Colors.grey[300],
-                  child: const Icon(Icons.restaurant, size: 60, color: Colors.grey),
-                ),
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return Center(
-                    child: CircularProgressIndicator(
-                      value: progress.expectedTotalBytes != null
-                          ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
-                          : null,
-                    ),
-                  );
-                },
+            // Sección de imagen (removida ya que no existe en tu modelo)
+            Container(
+              height: 150,
+              color: Colors.grey[200],
+              child: Center(
+                child: Icon(Icons.restaurant, size: 60, color: Colors.grey[400]),
               ),
             ),
             Padding(
@@ -55,36 +42,48 @@ class RestaurantCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    restaurant.name,
-                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    restaurant.nombre,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    restaurant.description,
+                    restaurant.description ?? 'Sin descripción',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey[700],
+                    ),
                   ),
                   const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 18),
-                      const SizedBox(width: 4),
-                      Text(
-                        restaurant.rating.toStringAsFixed(1),
-                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                  // Sección de información adicional
+                  if (restaurant.tokenQrActual != null) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.qr_code, size: 18, color: theme.primaryColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          'QR disponible',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.green,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (restaurant.fechaQrGenerado != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Actualizado: ${restaurant.fechaQrGenerado!.toLocal().toString().split(' ')[0]}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
                       ),
-                      const Spacer(),
-                      const Icon(Icons.schedule, size: 18, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${restaurant.deliveryTime} min',
-                        style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -1,50 +1,56 @@
-import 'package:flutter/foundation.dart';
-import '../models/product.dart';
+// lib/services/restaurant_service.dart
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/restaurant.dart';
 
 class RestaurantService with ChangeNotifier {
-  final List<Restaurant> _restaurants = [];
-  final List<Product> _products = [];
+  final SupabaseClient _supabase = Supabase.instance.client;
 
   Future<List<Restaurant>> getRestaurants() async {
-    await Future.delayed(const Duration(seconds: 1));
-    return _restaurants;
+    final response = await _supabase
+        .from('Restaurantes')
+        .select()
+        .order('created_at', ascending: false);
+
+    return response.map<Restaurant>((json) => Restaurant.fromJson(json)).toList();
+  }
+
+  Future<Restaurant?> getRestaurantById(String id) async {
+    final response = await _supabase
+        .from('Restaurantes')
+        .select()
+        .eq('id', id)
+        .single();
+
+    return response != null ? Restaurant.fromJson(response) : null;
   }
 
   Future<Restaurant> createRestaurant({
-    required String name,
-    required String description,
-    required String ownerId,
+    required String nombre,
+    String? description,
+    String? tokenQrActual,
+    DateTime? fechaQrGenerado,
   }) async {
-    final newRestaurant = Restaurant(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      name: name,
-      description: description,
-      imageUrl: 'https://example.com/restaurant.jpg',
-      ownerId: ownerId,
-    );
-    _restaurants.add(newRestaurant);
-    notifyListeners();
-    return newRestaurant;
+    final response = await _supabase
+        .from('Restaurantes')
+        .insert({
+          'nombre': nombre,
+          'description': description,
+          'token_qr_actual': tokenQrActual,
+          'fecha_qr_generado': fechaQrGenerado?.toIso8601String(),
+        })
+        .select()
+        .single();
+
+    return Restaurant.fromJson(response);
   }
 
-  Future<List<Product>> getProductsByCategory(String restaurantId, String category) async {
-    await Future.delayed(const Duration(seconds: 1));
-    return _products.where((p) => p.restaurantId == restaurantId && p.category == category).toList();
-  }
-
-  Future<void> addProduct(Product product) async {
-    _products.add(product);
-    notifyListeners();
-  }
-
-  Future<List<String>> getCategories(String restaurantId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    final categories = _products
-        .where((p) => p.restaurantId == restaurantId)
-        .map((p) => p.category)
-        .toSet()
-        .toList();
-    return categories.isNotEmpty ? categories : ['Entradas', 'Platos principales', 'Postres'];
+  Future<void> updateRestaurant(Restaurant restaurant) async {
+    await _supabase.from('Restaurantes').update({
+      'nombre': restaurant.nombre,
+      'description': restaurant.description,
+      'token_qr_actual': restaurant.tokenQrActual,
+      'fecha_qr_generado': restaurant.fechaQrGenerado?.toIso8601String(),
+    }).eq('id', restaurant.id);
   }
 }

@@ -1,83 +1,179 @@
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import '../models/user.dart';
 import '../models/restaurant.dart';
 import './restaurant_service.dart';
 
 class AuthService with ChangeNotifier {
+  final SupabaseClient _supabase;
+  final RestaurantService _restaurantService;
+  
   User? _currentUser;
   Restaurant? _currentRestaurant;
+  AuthState _authState = AuthState.initial;
 
   User? get currentUser => _currentUser;
   Restaurant? get currentRestaurant => _currentRestaurant;
+  AuthState get authState => _authState;
 
-  Future<void> register({
+  AuthService({
+    SupabaseClient? supabaseClient,
+    RestaurantService? restaurantService,
+  }) : 
+    _supabase = supabaseClient ?? Supabase.instance.client,
+    _restaurantService = restaurantService ?? RestaurantService() {
+    _initAuthListener();
+  }
+
+  Future<void> _initAuthListener() async {
+    _supabase.auth.onAuthStateChange.listen((event) async {
+      final session = event.session;
+      
+      if (session != null && _currentUser == null) {
+        await _loadUserData(session.user.id);
+      } else if (session == null) {
+        _resetAuthState();
+      }
+    });
+  }
+
+  Future<void> _loadUserData(String userId) async {
+    try {
+      _authState = AuthState.loading;
+      notifyListeners();
+
+      final userData = await _supabase
+          .from('usuarios')
+          .select()
+          .eq('id', userId)
+          .single();
+
+      _currentUser = User.fromJson(userData);
+
+      if (_currentUser!.restaurantId != null) {
+        _currentRestaurant = await _restaurantService.getRestaurantById(
+          _currentUser!.restaurantId!,
+        );
+      }
+
+      _authState = AuthState.authenticated;
+    } catch (e) {
+      _authState = AuthState.error;
+      debugPrint('Error loading user data: $e');
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<User> register({
     required String name,
     required String email,
     required String password,
-    required String role,
+    required UserRole role,
     String? restaurantName,
     String? restaurantDescription,
   }) async {
-    // 1. Registrar usuario en tu backend
-    _currentUser = User(
-      id: 'generated-id',
-      name: name,
-      email: email,
-      role: role == 'restaurant' ? UserRole.restaurantAdmin : UserRole.client,
-    );
+    try {
+      _authState = AuthState.loading;
+      notifyListeners();
 
-    // 2. Si es restaurante, crea el restaurante
-    if (role == 'restaurant' && restaurantName != null) {
-      final restaurantService = RestaurantService();
-      _currentRestaurant = await restaurantService.createRestaurant(
-        name: restaurantName,
-        description: restaurantDescription ?? '',
-        ownerId: _currentUser!.id,
+      // 1. Registrar usuario en Auth
+      final authResponse = await _supabase.auth.signUp(
+        email: email,
+        password: password,
+        data: {'name': name},
       );
-    }
 
+      if (authResponse.user == null) {
+        throw Exception('User registration failed');
+      }
+
+      // 2. Crear registro en tabla usuarios
+      final userResponse = await _supabase.from('usuarios').insert({
+        'id': authResponse.user!.id,
+        'nombre': name,
+        'email': email,
+        'rol': role.value,
+        'id_restaurante': null,
+      }).select().single();
+
+      final user = User.fromJson(userResponse);
+      _currentUser = user;
+
+      // 3. Si es admin, crear restaurante
+      if (role == UserRole.restaurantAdmin && restaurantName != null) {
+        final restaurant = await _restaurantService.createRestaurant(
+          nombre: restaurantName,
+          description: restaurantDescription,
+        );
+
+        await _supabase.from('usuarios').update({
+          'id_restaurante': restaurant.id,
+        }).eq('id', user.id);
+
+        _currentRestaurant = restaurant;
+        _currentUser = user.copyWith(restaurantId: restaurant.id);
+      }
+
+      _authState = AuthState.authenticated;
+      notifyListeners();
+      return _currentUser!;
+    } catch (e) {
+      _authState = AuthState.error;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<User> login(String email, String password) async {
+    try {
+      _authState = AuthState.loading;
+      notifyListeners();
+
+      final authResponse = await _supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+
+      await _loadUserData(authResponse.user!.id);
+      return _currentUser!;
+    } catch (e) {
+      _authState = AuthState.error;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> logout() async {
+    try {
+      await _supabase.auth.signOut();
+      _resetAuthState();
+    } catch (e) {
+      debugPrint('Error during logout: $e');
+      rethrow;
+    }
+  }
+
+  Future<User?> getCurrentUser() async {
+    final session = _supabase.auth.currentSession;
+    if (session != null && _currentUser == null) {
+      await _loadUserData(session.user.id);
+    }
+    return _currentUser;
+  }
+
+  void _resetAuthState() {
+    _currentUser = null;
+    _currentRestaurant = null;
+    _authState = AuthState.unauthenticated;
     notifyListeners();
   }
+}
 
-   Future<bool> login(String email, String password) async {
-    try {
-      await Future.delayed(const Duration(seconds: 1));
-      
-      // Simulación de respuesta del servidor
-      final mockUsers = [
-        {
-          'id': '1',
-          'name': 'Cliente Ejemplo',
-          'email': 'cliente@example.com',
-          'role': UserRole.client,
-        },
-        {
-          'id': '2',
-          'name': 'Dueño Restaurante',
-          'email': 'dueno@example.com',
-          'role': UserRole.restaurantAdmin,
-          'restaurantId': '1001',
-        },
-      ];
-      
-      final userData = mockUsers.firstWhere(
-        (user) => user['email'] == email,
-        orElse: () => throw Exception('Usuario no encontrado'),
-      );
-      
-      _currentUser = User(
-        id: userData['id'] as String,
-        name: userData['name'] as String,
-        email: email,
-        role: userData['role'] as UserRole,
-        restaurantId: userData['restaurantId'] as String?,
-      );
-      
-      notifyListeners();
-      return true;
-    } catch (e) {
-      debugPrint('Error en login: $e');
-      return false;
-    }
-  }
+enum AuthState {
+  initial,
+  loading,
+  authenticated,
+  unauthenticated,
+  error,
 }

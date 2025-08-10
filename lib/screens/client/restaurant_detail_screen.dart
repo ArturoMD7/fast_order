@@ -1,6 +1,5 @@
 // lib/screens/client/restaurant_detail_screen.dart
 import 'package:flutter/material.dart';
-
 import '../../models/restaurant.dart';
 
 class RestaurantDetailScreen extends StatelessWidget {
@@ -19,7 +18,7 @@ class RestaurantDetailScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: primaryColor,
         title: Text(
-          restaurant.name,
+          restaurant.nombre, // Cambiado de name a nombre
           style: const TextStyle(color: Colors.white),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -28,21 +27,7 @@ class RestaurantDetailScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            Hero(
-              tag: restaurant.imageUrl,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
-                ),
-                child: Image.network(
-                  restaurant.imageUrl,
-                  height: 220,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
+            
             const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -50,7 +35,7 @@ class RestaurantDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    restaurant.name,
+                    restaurant.nombre, // Cambiado de name a nombre
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -59,7 +44,7 @@ class RestaurantDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    restaurant.description,
+                    restaurant.description ?? 'No hay descripción disponible',
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey.shade800,
@@ -67,26 +52,41 @@ class RestaurantDetailScreen extends StatelessWidget {
                     textAlign: TextAlign.justify,
                   ),
                   const SizedBox(height: 30),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () =>
-                          Navigator.pushNamed(context, '/client/qr-scanner'),
-                      icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
-                      label: const Text(
-                        'Escanear QR para ordenar',
-                        style: TextStyle(fontSize: 18, color: Colors.white),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                  if (restaurant.tokenQrActual != null)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => Navigator.pushNamed(
+                          context, 
+                          '/client/qr-scanner',
+                          arguments: restaurant.tokenQrActual,
                         ),
-                        elevation: 5,
+                        icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
+                        label: const Text(
+                          'Escanear QR para ordenar',
+                          style: TextStyle(fontSize: 18, color: Colors.white),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 5,
+                        ),
                       ),
                     ),
-                  ),
+                  if (restaurant.fechaQrGenerado != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 20),
+                      child: Text(
+                        'QR generado: ${restaurant.fechaQrGenerado!.toLocal().toString()}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
