@@ -28,7 +28,7 @@ class CategoryService {
   /// Obtener productos por categoría
   Future<List<Product>> getProductsByCategory(String categoryId) async {
     final response = await _supabase
-        .from('productos')
+        .from('Productos')
         .select()
         .eq('id_categoria', categoryId)
         .order('created_at', ascending: false);

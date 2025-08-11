@@ -18,18 +18,18 @@ class ClientNavBar extends StatelessWidget {
       items: [
         BottomNavigationBarItem(
           icon: Icon(Icons.restaurant, color: Colors.amber,),
-          label: 'Restaurantes',
+          label: 'Restaurantes' ,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.qr_code_scanner),
+          icon: Icon(Icons.qr_code_scanner , color: Colors.amber,),
           label: 'Escanear',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.shopping_cart),
+          icon: Icon(Icons.shopping_cart, color: Colors.amber,),
           label: 'Carrito',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.history),
+          icon: Icon(Icons.history, color: Colors.amber,),
           label: 'Pedidos',
         ),
       ],

@@ -1,7 +1,7 @@
 enum UserRole {
   client('client'),
   worker('worker'),
-  restaurantAdmin('restaurant_admin');
+  restaurantAdmin('restaurantAdmin');
 
   final String value;
   const UserRole(this.value);
@@ -11,6 +11,7 @@ enum UserRole {
       'client' => UserRole.client,
       'worker' => UserRole.worker,
       'restaurant_admin' => UserRole.restaurantAdmin,
+      'administrador' => UserRole.restaurantAdmin,
       _ => throw ArgumentError('Unknown UserRole value: $value'),
     };
   }

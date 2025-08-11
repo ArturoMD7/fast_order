@@ -25,28 +25,57 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
   }
 
   void _loadData() {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    final categoryService = Provider.of<CategoryService>(context, listen: false);
-    final productService = Provider.of<ProductService>(context, listen: false);
-    final restaurantId = authService.currentRestaurant?.id ?? '';
-
-    _categoriesFuture = categoryService.getCategories(restaurantId: restaurantId);
-    _refreshProducts(productService, restaurantId);
+  final authService = Provider.of<AuthService>(context, listen: false);
+  final restaurant = authService.currentRestaurant;
+  
+  if (restaurant == null || restaurant.id.isEmpty) {
+    debugPrint('No hay restaurante asignado');
+    return;
   }
+
+  final categoryService = Provider.of<CategoryService>(context, listen: false);
+  final productService = Provider.of<ProductService>(context, listen: false);
+  
+  _categoriesFuture = categoryService.getCategories(restaurantId: restaurant.id);
+  _refreshProducts(productService, restaurant.id);
+}
 
   void _refreshProducts(ProductService service, String restaurantId) {
-    setState(() {
-      _productsFuture = _selectedCategoryId != null && _selectedCategoryId != 'all'
-          ? service.getProductsByCategory(_selectedCategoryId!)
-          : service.getAllProductsByRestaurant(restaurantId);
-    });
+  if (restaurantId.isEmpty) {
+    debugPrint('Restaurant ID is empty');
+    return;
   }
 
+  setState(() {
+    _productsFuture = _selectedCategoryId != null && _selectedCategoryId != 'all'
+        ? service.getProductsByCategory(_selectedCategoryId!)
+        : service.getAllProductsByRestaurant(restaurantId);
+  });
+
+  // Convertir a int (opcional, dependiendo de tu base de datos)
+  final restaurantIdInt = int.tryParse(restaurantId);
+  if (restaurantIdInt == null) {
+    throw Exception('ID de restaurante debe ser un número válido');
+  }
+
+  setState(() {
+    _productsFuture = _selectedCategoryId != null && _selectedCategoryId != 'all'
+        ? service.getProductsByCategory(_selectedCategoryId!)
+        : service.getAllProductsByRestaurant(restaurantId);
+  });
+}
   @override
   Widget build(BuildContext context) {
     final primaryColor = Colors.deepPurple;
     final authService = Provider.of<AuthService>(context);
     final restaurantId = authService.currentRestaurant?.id ?? '';
+
+    if (restaurantId.isEmpty) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Gestión de Productos')),
+      body: const Center(child: Text('No se ha asignado un restaurante')),
+    );
+    }
 
     return Scaffold(
       appBar: AppBar(

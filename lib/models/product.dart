@@ -9,6 +9,8 @@ class Product {
   final String idRestaurante;
   final DateTime createdAt;
   final String? categoryName;
+  final bool destacado; 
+  final bool activo; 
 
   Product({
     required this.id,
@@ -20,6 +22,8 @@ class Product {
     required this.idRestaurante,
     required this.createdAt,
     this.categoryName,
+    this.destacado = false, 
+    this.activo = true, 
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
