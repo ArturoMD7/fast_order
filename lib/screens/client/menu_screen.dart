@@ -182,3 +182,7 @@ class MenuScreen extends StatelessWidget {
     );
   }
 }
+
+extension on CategoryService {
+  getProductsByCategory(String categoryId) {}
+}

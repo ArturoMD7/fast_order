@@ -1,63 +1,52 @@
 // lib/services/category_service.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/category.dart';
-import '../models/product.dart';
 
 class CategoryService {
   final SupabaseClient _supabase;
 
-  CategoryService({SupabaseClient? supabase})
-      : _supabase = supabase ?? Supabase.instance.client;
+  CategoryService({SupabaseClient? supabase}) 
+    : _supabase = supabase ?? Supabase.instance.client;
 
-  /// Obtener todas las categorías
-  
-  Future<List<Category>> getCategories({String? restaurantId}) async {
-  final query = _supabase
-      .from('categorias')
-      .select()
-      .maybeEq('id_restaurante', restaurantId) // 👈 nuevo helper
-      .order('created_at', ascending: false);
+  Future<List<Category>> getCategories({required String restaurantId}) async {
+    try {
+      final response = await _supabase
+        .from('Categorias')
+        .select('*')
+        .eq('id_restaurante', restaurantId)
+        .order('nombre', ascending: true);
 
-  final response = await query;
-  return (response as List)
-      .map((json) => Category.fromJson(json as Map<String, dynamic>))
-      .toList();
-}
+      return response.map<Category>((json) => Category.fromJson(json)).toList();
+    } catch (e) {
+      throw Exception('Error al obtener categorías: $e');
+    }
+  }
 
-
-  /// Obtener productos por categoría
-  Future<List<Product>> getProductsByCategory(String categoryId) async {
-    final response = await _supabase
-        .from('Productos')
+  Future<Category> createCategory(String nombre, String restaurantId) async {
+    try {
+      final response = await _supabase
+        .from('Categorias')
+        .insert({
+          'nombre': nombre,
+          'id_restaurante': restaurantId,
+        })
         .select()
-        .eq('id_categoria', categoryId)
-        .order('created_at', ascending: false);
+        .single();
 
-    return (response as List)
-        .map((json) => Product.fromJson(json as Map<String, dynamic>))
-        .toList();
+      return Category.fromJson(response);
+    } catch (e) {
+      throw Exception('Error al crear categoría: $e');
+    }
   }
 
-  /// Obtener categorías con sus productos
-  Future<Map<Category, List<Product>>> getCategoriesWithProducts({
-    String? restaurantId,
-  }) async {
-    final categories = await getCategories(restaurantId: restaurantId);
-    final result = <Category, List<Product>>{};
-
-    for (final category in categories) {
-      final products = await getProductsByCategory(category.id);
-      result[category] = products;
+  Future<void> deleteCategory(String categoryId) async {
+    try {
+      await _supabase
+        .from('Categorias')
+        .delete()
+        .eq('id', categoryId);
+    } catch (e) {
+      throw Exception('Error al eliminar categoría: $e');
     }
-
-    return result;
-  }
-}
-extension OptionalFilter on PostgrestFilterBuilder {
-  PostgrestFilterBuilder maybeEq(String column, String? value) {
-    if (value != null) {
-      return eq(column, value);
-    }
-    return this;
   }
 }

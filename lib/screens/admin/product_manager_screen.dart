@@ -17,6 +17,8 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
   late Future<List<Product>> _productsFuture;
   late Future<List<Category>> _categoriesFuture;
   String? _selectedCategoryId;
+  final TextEditingController _categoryController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -24,46 +26,39 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
     _loadData();
   }
 
-  void _loadData() {
-  final authService = Provider.of<AuthService>(context, listen: false);
-  final restaurant = authService.currentRestaurant;
-  
-  if (restaurant == null || restaurant.id.isEmpty) {
-    debugPrint('No hay restaurante asignado');
-    return;
+  @override
+  void dispose() {
+    _categoryController.dispose();
+    _searchController.dispose();
+    super.dispose();
   }
 
-  final categoryService = Provider.of<CategoryService>(context, listen: false);
-  final productService = Provider.of<ProductService>(context, listen: false);
-  
-  _categoriesFuture = categoryService.getCategories(restaurantId: restaurant.id);
-  _refreshProducts(productService, restaurant.id);
-}
+  void _loadData() {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final restaurant = authService.currentRestaurant;
+    
+    if (restaurant == null || restaurant.id.isEmpty) {
+      debugPrint('No hay restaurante asignado');
+      return;
+    }
+
+    final categoryService = Provider.of<CategoryService>(context, listen: false);
+    final productService = Provider.of<ProductService>(context, listen: false);
+    
+    _categoriesFuture = categoryService.getCategories(restaurantId: restaurant.id);
+    _refreshProducts(productService, restaurant.id);
+  }
 
   void _refreshProducts(ProductService service, String restaurantId) {
-  if (restaurantId.isEmpty) {
-    debugPrint('Restaurant ID is empty');
-    return;
+    if (restaurantId.isEmpty) return;
+
+    setState(() {
+      _productsFuture = _selectedCategoryId != null && _selectedCategoryId != 'all'
+          ? service.getProductsByCategory(_selectedCategoryId!)
+          : service.getAllProductsByRestaurant(restaurantId);
+    });
   }
 
-  setState(() {
-    _productsFuture = _selectedCategoryId != null && _selectedCategoryId != 'all'
-        ? service.getProductsByCategory(_selectedCategoryId!)
-        : service.getAllProductsByRestaurant(restaurantId);
-  });
-
-  // Convertir a int (opcional, dependiendo de tu base de datos)
-  final restaurantIdInt = int.tryParse(restaurantId);
-  if (restaurantIdInt == null) {
-    throw Exception('ID de restaurante debe ser un número válido');
-  }
-
-  setState(() {
-    _productsFuture = _selectedCategoryId != null && _selectedCategoryId != 'all'
-        ? service.getProductsByCategory(_selectedCategoryId!)
-        : service.getAllProductsByRestaurant(restaurantId);
-  });
-}
   @override
   Widget build(BuildContext context) {
     final primaryColor = Colors.deepPurple;
@@ -71,10 +66,10 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
     final restaurantId = authService.currentRestaurant?.id ?? '';
 
     if (restaurantId.isEmpty) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Gestión de Productos')),
-      body: const Center(child: Text('No se ha asignado un restaurante')),
-    );
+      return Scaffold(
+        appBar: AppBar(title: const Text('Gestión de Productos')),
+        body: const Center(child: Text('No se ha asignado un restaurante')),
+      );
     }
 
     return Scaffold(
@@ -83,9 +78,45 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
         backgroundColor: primaryColor,
         centerTitle: true,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () => _showAddCategoryDialog(context, restaurantId),
+            tooltip: 'Agregar categoría',
+          ),
+        ],
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: 'Buscar productos',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          _loadData();
+                        },
+                      )
+                    : null,
+              ),
+              onChanged: (value) {
+                if (value.isEmpty) {
+                  _loadData();
+                } else {
+                  _searchProducts(value, restaurantId);
+                }
+              },
+            ),
+          ),
           _buildCategoryFilter(context, restaurantId),
           Expanded(
             child: _buildProductList(primaryColor),
@@ -104,9 +135,21 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
     return FutureBuilder<List<Category>>(
       future: _categoriesFuture,
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox();
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-        final categories = snapshot.data!;
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text('Error: ${snapshot.error}'),
+          );
+        }
+
+        final categories = snapshot.data ?? [];
         final options = [
           const DropdownMenuItem(value: 'all', child: Text('Todas las categorías')),
           ...categories.map((category) => DropdownMenuItem(
@@ -117,20 +160,38 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: DropdownButtonFormField<String>(
-            value: _selectedCategoryId ?? 'all',
-            decoration: InputDecoration(
-              labelText: 'Filtrar por categoría',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+          child: Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _selectedCategoryId ?? 'all',
+                  decoration: InputDecoration(
+                    labelText: 'Filtrar por categoría',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  items: options,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedCategoryId = value;
+                    });
+                    final service = Provider.of<ProductService>(context, listen: false);
+                    _refreshProducts(service, restaurantId);
+                  },
+                ),
               ),
-            ),
-            items: options,
-            onChanged: (value) {
-              _selectedCategoryId = value;
-              final service = Provider.of<ProductService>(context, listen: false);
-              _refreshProducts(service, restaurantId);
-            },
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: () {
+                  final categoryService = Provider.of<CategoryService>(context, listen: false);
+                  setState(() {
+                    _categoriesFuture = categoryService.getCategories(restaurantId: restaurantId);
+                  });
+                },
+                tooltip: 'Actualizar categorías',
+              ),
+            ],
           ),
         );
       },
@@ -198,9 +259,19 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
           product.nombre,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
-        subtitle: Text(
-          '\$${product.precio.toStringAsFixed(2)}',
-          style: TextStyle(color: Colors.grey[700]),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '\$${product.precio.toStringAsFixed(2)}',
+              style: TextStyle(color: Colors.grey[700]),
+            ),
+            if (product.categoryName != null)
+              Text(
+                product.categoryName!,
+                style: TextStyle(color: Colors.grey[500], fontSize: 12),
+              ),
+          ],
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -217,6 +288,18 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
         ),
       ),
     );
+  }
+
+  void _searchProducts(String query, String restaurantId) {
+    if (query.isEmpty) {
+      _loadData();
+      return;
+    }
+
+    final productService = Provider.of<ProductService>(context, listen: false);
+    setState(() {
+      _productsFuture = productService.searchProducts(restaurantId, query);
+    });
   }
 
   void _confirmDeleteProduct(BuildContext context, Product product) {
@@ -236,7 +319,7 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
               try {
                 final service = Provider.of<ProductService>(context, listen: false);
                 await service.deleteProduct(product.id);
-                _loadData(); // Recargar datos
+                _loadData();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Producto "${product.nombre}" eliminado'),
@@ -259,6 +342,63 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
     );
   }
 
+  void _showAddCategoryDialog(BuildContext context, String restaurantId) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Agregar Nueva Categoría'),
+          content: TextField(
+            controller: _categoryController,
+            decoration: const InputDecoration(
+              labelText: 'Nombre de la categoría',
+              border: OutlineInputBorder(),
+            ),
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (_categoryController.text.isNotEmpty) {
+                  try {
+                    final service = Provider.of<CategoryService>(context, listen: false);
+                    await service.createCategory(_categoryController.text, restaurantId);
+                    
+                    _categoryController.clear();
+                    Navigator.pop(context);
+                    
+                    setState(() {
+                      _categoriesFuture = service.getCategories(restaurantId: restaurantId);
+                    });
+                    
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Categoría creada exitosamente'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error al crear categoría: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showAddProductDialog(BuildContext context, String restaurantId) {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController();
@@ -276,7 +416,47 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
               return const Center(child: CircularProgressIndicator());
             }
             
+            if (snapshot.hasError) {
+              return AlertDialog(
+                title: const Text('Error'),
+                content: Text('No se pudieron cargar las categorías: ${snapshot.error}'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK'),
+                  ),
+                ],
+              );
+            }
+            
             final categories = snapshot.data ?? [];
+            
+            if (categories.isEmpty) {
+              return AlertDialog(
+                title: const Text('No hay categorías'),
+                content: const Text('Debes crear al menos una categoría antes de agregar productos.'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _showAddCategoryDialog(context, restaurantId);
+                      // After the category dialog closes, reopen the add product dialog
+                      // This can be improved with async/await if _showAddCategoryDialog returns Future
+                      Future.delayed(const Duration(milliseconds: 300), () {
+                        _showAddProductDialog(context, restaurantId);
+                      });
+                    },
+                    child: const Text('Crear Categoría'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancelar'),
+                  ),
+                ],
+              );
+            }
+            
+            selectedCategoryId ??= categories.first.id;
             
             return AlertDialog(
               title: const Text('Agregar Producto'),
@@ -319,7 +499,7 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: categories.isNotEmpty ? categories.first.id : null,
+                        value: selectedCategoryId,
                         decoration: const InputDecoration(
                           labelText: 'Categoría',
                           border: OutlineInputBorder(),
@@ -332,6 +512,17 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
                             .toList(),
                         onChanged: (value) => selectedCategoryId = value,
                         validator: (value) => value == null ? 'Seleccione una categoría' : null,
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _showAddCategoryDialog(context, restaurantId);
+                          Future.delayed(const Duration(milliseconds: 300), () {
+                            _showAddProductDialog(context, restaurantId);
+                          });
+                        },
+                        child: const Text('+ Agregar nueva categoría'),
                       ),
                     ],
                   ),
@@ -352,14 +543,17 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
                           nombre: nameController.text,
                           description: descriptionController.text,
                           precio: double.parse(priceController.text),
-                          imagenUrl: '', // Implementa subida de imagen si es necesario
+                          imagenUrl: '',
                           idCategoria: selectedCategoryId!,
                           idRestaurante: restaurantId,
                           createdAt: DateTime.now(),
                         );
 
+                        await service.createProduct(newProduct);
+                        
                         Navigator.pop(context);
-                        _loadData(); // Recargar datos
+                        _loadData();
+                        
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('Producto "${newProduct.nombre}" agregado'),
@@ -369,7 +563,7 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Error al agregar: $e'),
+                            content: Text('Error al agregar producto: $e'),
                             backgroundColor: Colors.red,
                           ),
                         );
@@ -401,6 +595,19 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
+            }
+            
+            if (snapshot.hasError) {
+              return AlertDialog(
+                title: const Text('Error'),
+                content: Text('No se pudieron cargar las categorías: ${snapshot.error}'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK'),
+                  ),
+                ],
+              );
             }
             
             final categories = snapshot.data ?? [];
@@ -484,7 +691,8 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
                         await service.updateProduct(updatedProduct);
                         
                         Navigator.pop(context);
-                        _loadData(); // Recargar datos
+                        _loadData();
+                        
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('Producto "${updatedProduct.nombre}" actualizado'),
