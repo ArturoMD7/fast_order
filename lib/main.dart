@@ -1,9 +1,10 @@
 // lib/main.dart
 import 'package:fast_order/screens/auth/register_screen.dart';
+import 'package:fast_order/services/category_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import 'package:flutter/foundation.dart';
 import '/screens/auth/login_screen.dart';
 import '/screens/auth/role_selection_screen.dart';
 import '/screens/client/restaurants_screen.dart';
@@ -25,6 +26,7 @@ import '/screens/admin/user_management_screen.dart';
 import 'package:fast_order/services/auth_service.dart';
 import 'package:fast_order/services/restaurant_service.dart';
 import 'package:fast_order/services/order_service.dart';
+import 'package:fast_order/services/product_service.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:fast_order/widgets/common/role_layout.dart';
@@ -43,6 +45,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => RestaurantService()),
         ChangeNotifierProvider(create: (_) => OrderService()),
+        Provider(create: (_) => CategoryService()),
+        Provider(create: (_) => ProductService()),
       ],
       child: const MyApp(),
     ),

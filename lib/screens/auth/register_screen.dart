@@ -43,7 +43,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final userId = authResponse.user!.id;
     int? restauranteId;
 
-    // 2. Si es administrador, crear restaurante primero
+    // 2. Primero crear el usuario en la tabla Usuarios
+    final userData = {
+      'id': userId,
+      'nombre': _nameController.text.trim(),
+      'apellidos': _firstNameController.text.trim(),
+      'email': _emailController.text.trim(),
+      'num_telefono': _phoneController.text.trim(),
+      'rol': _selectedRole,
+      'created_at': DateTime.now().toIso8601String(),
+    };
+
+    await supabase.from('Usuarios').insert(userData);
+
+    // 3. Si es administrador, crear restaurante después de crear el usuario
     if (_selectedRole == administrador) {
       final restaurantData = {
         'nombre': _restaurantNameController.text.trim(),
@@ -58,21 +71,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         .single();
       
       restauranteId = restaurantResponse['id'] as int;
+
+      // 4. Actualizar el usuario con el id del restaurante
+      await supabase
+        .from('Usuarios')
+        .update({'id_restaurante': restauranteId})
+        .eq('id', userId);
     }
-
-    // 3. Registrar en la tabla Usuarios (SIN contraseña)
-    final userData = {
-      'id': userId,
-      'nombre': _nameController.text.trim(),
-      'apellidos': _firstNameController.text.trim(),
-      'email': _emailController.text.trim(),
-      'num_telefono': _phoneController.text.trim(),
-      'rol': _selectedRole,
-      if (restauranteId != null) 'id_restaurante': restauranteId,
-      'created_at': DateTime.now().toIso8601String(),
-    };
-
-    await supabase.from('Usuarios').insert(userData);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

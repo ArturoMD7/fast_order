@@ -9,7 +9,15 @@ class AdminHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
-    final user = authService.currentUser!;
+    final user = authService.currentUser;
+
+    final restaurant = authService.currentRestaurant;
+
+    if (user == null || restaurant == null || restaurant.id.isEmpty) {
+      return Scaffold(
+        body: Center(child: Text('No tienes un restaurante asignado')),
+      );
+    }
 
     final primaryColor = Colors.deepPurple;
 
