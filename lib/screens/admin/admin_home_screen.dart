@@ -114,7 +114,7 @@ class AdminHomeScreen extends StatelessWidget {
                 icon: const Icon(Icons.logout),
                 label: const Text('Cerrar sesión'),
                 onPressed: () async {
-                  Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                  await _signOut(context);
                 },
               ),
             ),
