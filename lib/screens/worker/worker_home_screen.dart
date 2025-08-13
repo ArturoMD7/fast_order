@@ -11,7 +11,7 @@ class WorkerHomeScreen extends StatefulWidget {
 class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
   final supabase = Supabase.instance.client;
   String _restaurantName = "Mi Restaurante";
-  int _activeOrdersCount = 0;
+  int _pendingOrdersCount = 0; // Pedidos con estado "pedido"
   bool _isLoading = true;
   String _greeting = '';
 
@@ -62,16 +62,16 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
           .eq('id', restaurantId)
           .maybeSingle();
 
-      // Obtener conteo de pedidos activos (FORMA CORRECTA)
+      // Obtener conteo de pedidos PENDIENTES (estado = "pedido")
       final ordersResponse = await supabase
           .from('Pedidos')
           .select()
           .eq('id_restaurante', restaurantId)
-          .eq('completado', false);
+          .eq('estado', 'pedido'); // Filtramos por estado "pedido"
 
       setState(() {
         _restaurantName = restaurantResponse?['nombre'] ?? "Mi Restaurante";
-        _activeOrdersCount = ordersResponse.length; // Usamos length directamente
+        _pendingOrdersCount = ordersResponse.length;
       });
     } catch (e) {
       debugPrint('Error loading data: $e');
@@ -85,20 +85,26 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
     }
   }
 
-  // ... (El resto del código build y _buildActionButton permanece igual)
+  Future<void> _signOut(BuildContext context) async {
+    try {
+      await supabase.auth.signOut();
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cerrar sesión: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-      Future<void> _signOut(BuildContext context) async {
-        try {
-          await Supabase.instance.client.auth.signOut();
-          Navigator.pushReplacementNamed(context, '/login');
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
-          );
-        }
-      }
-
     return Scaffold(
       appBar: AppBar(
         title: Text(_restaurantName),
@@ -108,9 +114,9 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
           IconButton(
             onPressed: () => _signOut(context),
             icon: const Icon(Icons.exit_to_app),
+            tooltip: 'Cerrar sesión',
           ),
         ],
-
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -150,17 +156,18 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
                         _buildActionButton(
                           context,
                           icon: Icons.receipt_long,
-                          label: 'Ver pedidos activos',
-                          badgeCount: _activeOrdersCount > 0 ? _activeOrdersCount : null,
+                          label: 'Pedidos pendientes',
+                          badgeCount: _pendingOrdersCount > 0 ? _pendingOrdersCount : null,
                           onPressed: () => Navigator.pushNamed(context, '/worker/active-orders'),
                         ),
-                        if (_activeOrdersCount > 0) ...[
+                        if (_pendingOrdersCount > 0) ...[
                           const SizedBox(height: 20),
                           Text(
-                            'Tienes $_activeOrdersCount pedidos pendientes',
+                            '$_pendingOrdersCount pedidos por atender',
                             style: const TextStyle(
                               color: Colors.deepOrange,
                               fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
                           ),
                         ],
