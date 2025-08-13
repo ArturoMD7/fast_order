@@ -29,11 +29,13 @@ class Restaurant {
     );
   }
 
+  get descripcion => null;
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'nombre': nombre,
-      'description': description,
+      'descripcion': descripcion,
       'token_qr_actual': tokenQrActual,
       'fecha_qr_generado': fechaQrGenerado?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),

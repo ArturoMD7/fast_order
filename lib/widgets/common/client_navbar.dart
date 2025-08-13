@@ -15,21 +15,26 @@ class ClientNavBar extends StatelessWidget {
     return BottomNavigationBar(
       currentIndex: currentIndex,
       onTap: onTap,
-      items: [
+      selectedItemColor: Colors.amber, // Color ámbar para ícono y texto seleccionado
+      unselectedItemColor: Colors.grey, // Color gris para ícono y texto no seleccionado
+      showSelectedLabels: true, // Mostrar texto del ítem seleccionado
+      showUnselectedLabels: true, // Mostrar texto de ítems no seleccionados
+      type: BottomNavigationBarType.fixed, // Evita que se muevan los íconos
+      items: const [
         BottomNavigationBarItem(
-          icon: Icon(Icons.restaurant, color: Colors.amber,),
-          label: 'Restaurantes' ,
+          icon: Icon(Icons.restaurant),
+          label: 'Restaurantes',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.qr_code_scanner , color: Colors.amber,),
+          icon: Icon(Icons.qr_code_scanner),
           label: 'Escanear',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.shopping_cart, color: Colors.amber,),
+          icon: Icon(Icons.shopping_cart),
           label: 'Carrito',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.history, color: Colors.amber,),
+          icon: Icon(Icons.history),
           label: 'Pedidos',
         ),
       ],
