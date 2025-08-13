@@ -29,6 +29,7 @@ class Restaurant {
     );
   }
 
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

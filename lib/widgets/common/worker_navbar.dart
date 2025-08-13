@@ -15,6 +15,11 @@ class WorkerNavBar extends StatelessWidget {
     return BottomNavigationBar(
       currentIndex: currentIndex,
       onTap: onTap,
+      selectedItemColor: Colors.amber, // Color ámbar para ítem seleccionado
+      unselectedItemColor: Colors.grey, // Color gris para ítem no seleccionado
+      showSelectedLabels: true, // Mostrar texto del ítem seleccionado
+      showUnselectedLabels: true, // Mostrar texto de ítems no seleccionados
+      type: BottomNavigationBarType.fixed, // Evita el desplazamiento de íconos
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.home),

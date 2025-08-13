@@ -15,6 +15,11 @@ class AdminNavBar extends StatelessWidget {
     return BottomNavigationBar(
       currentIndex: currentIndex,
       onTap: onTap,
+      selectedItemColor: Colors.amber, // Color ámbar para ícono y texto seleccionado
+      unselectedItemColor: Colors.grey, // Color gris para ícono y texto no seleccionado
+      showSelectedLabels: true, // Asegura que el texto seleccionado se muestre
+      showUnselectedLabels: true, // Asegura que el texto no seleccionado se muestre
+      type: BottomNavigationBarType.fixed, // Importante para que funcione correctamente
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.dashboard),
