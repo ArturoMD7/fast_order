@@ -7,17 +7,6 @@ import '../../widgets/common/stats_chart.dart';
 class RestaurantStatsScreen extends StatelessWidget {
   const RestaurantStatsScreen({super.key});
 
-  Future<void> _signOut(BuildContext context) async {
-    try {
-      await Supabase.instance.client.auth.signOut();
-      Navigator.pushReplacementNamed(context, '/login');
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final primaryColor = Colors.deepPurple;
@@ -80,10 +69,6 @@ class RestaurantStatsScreen extends StatelessWidget {
                     trailing: 'Pizza Margarita',
                     icon: Icons.star,
                     color: Colors.amber,
-                  ),
-                  IconButton(
-                    onPressed: () => _signOut(context),
-                    icon: const Icon(Icons.access_alarm),
                   ),
                 ],
               ),
