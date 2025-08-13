@@ -44,7 +44,7 @@ class RestaurantDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    restaurant.descripcion ?? 'No hay descripción disponible',
+                    restaurant.description ?? 'No hay descripción disponible',
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey.shade800,

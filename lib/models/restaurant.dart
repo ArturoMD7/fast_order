@@ -20,7 +20,7 @@ class Restaurant {
     return Restaurant(
       id: json['id'].toString(),
       nombre: json['nombre'],
-      description: json['description'],
+      description: json['descripcion'],
       tokenQrActual: json['token_qr_actual'],
       fechaQrGenerado: json['fecha_qr_generado'] != null 
           ? DateTime.parse(json['fecha_qr_generado']) 
@@ -29,13 +29,12 @@ class Restaurant {
     );
   }
 
-  get descripcion => null;
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'nombre': nombre,
-      'descripcion': descripcion,
+      'descripcion': description,
       'token_qr_actual': tokenQrActual,
       'fecha_qr_generado': fechaQrGenerado?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
