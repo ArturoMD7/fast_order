@@ -88,12 +88,29 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
   // ... (El resto del código build y _buildActionButton permanece igual)
   @override
   Widget build(BuildContext context) {
+      Future<void> _signOut(BuildContext context) async {
+        try {
+          await Supabase.instance.client.auth.signOut();
+          Navigator.pushReplacementNamed(context, '/login');
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          );
+        }
+      }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_restaurantName),
         centerTitle: true,
         backgroundColor: Colors.deepPurple,
-        elevation: 2,
+        actions: [
+          IconButton(
+            onPressed: () => _signOut(context),
+            icon: const Icon(Icons.exit_to_app),
+          ),
+        ],
+
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

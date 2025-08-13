@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/user.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/auth_service.dart';
 
 class AdminHomeScreen extends StatelessWidget {
@@ -19,9 +19,33 @@ class AdminHomeScreen extends StatelessWidget {
       );
     }
 
+      Future<void> _signOut(BuildContext context) async {
+      try {
+        await Supabase.instance.client.auth.signOut();
+        Navigator.pushReplacementNamed(context, '/login');
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        );
+      }
+    }
+
     final primaryColor = Colors.deepPurple;
 
     return Scaffold(
+
+      appBar: AppBar(
+        title: const Text('Tu Carrito'),
+        backgroundColor: Colors.deepOrange,
+        elevation: 2,
+        actions: [
+          IconButton(
+            onPressed: () => _signOut(context),
+            icon: const Icon(Icons.exit_to_app),
+          ),
+        ],
+      ),
+
       drawer: Drawer(
         child: Column(
           children: [

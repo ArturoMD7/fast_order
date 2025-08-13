@@ -64,10 +64,6 @@ class _WorkerLayoutState extends State<WorkerLayout> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Trabajador'),
-        automaticallyImplyLeading: false,
-      ),
       body: widget.child,
       bottomNavigationBar: WorkerNavBar(
         currentIndex: _currentIndex,
