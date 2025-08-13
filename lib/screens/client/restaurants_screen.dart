@@ -1,5 +1,6 @@
 // lib/screens/restaurants/restaurant_list_screen.dart
 import 'package:fast_order/screens/client/restaurant_detail_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/restaurant_service.dart';
 import 'package:flutter/material.dart';
 import '../../models/restaurant.dart';
@@ -24,6 +25,17 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
     _restaurantsFuture = _restaurantService.getRestaurants();
   }
 
+  Future<void> _signOut(BuildContext context) async {
+    try {
+      await Supabase.instance.client.auth.signOut();
+      Navigator.pushReplacementNamed(context, '/login');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -34,6 +46,12 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
         title: const Text('Restaurantes Disponibles'),
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
+        actions: [
+          IconButton(
+            onPressed: () => _signOut(context),
+            icon: const Icon(Icons.access_alarm),
+          ),
+        ],
       ),
       body: FutureBuilder<List<Restaurant>>(
         future: _restaurantsFuture,

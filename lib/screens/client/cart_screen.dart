@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/order.dart';
 import '../../services/order_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -18,6 +19,18 @@ class CartScreen extends StatelessWidget {
       ),
     ];
 
+    Future<void> _signOut(BuildContext context) async {
+      try {
+        await Supabase.instance.client.auth.signOut();
+        Navigator.pushReplacementNamed(context, '/login');
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        );
+      }
+    }
+
+
     final total = cartItems.fold(
       0.0,
       (sum, item) => sum + (item.price * item.quantity),
@@ -28,7 +41,14 @@ class CartScreen extends StatelessWidget {
         title: const Text('Tu Carrito'),
         backgroundColor: Colors.deepOrange,
         elevation: 2,
+        actions: [
+          IconButton(
+            onPressed: () => _signOut(context),
+            icon: const Icon(Icons.access_alarm),
+          ),
+        ],
       ),
+      
       body: Column(
         children: [
           Expanded(
@@ -137,11 +157,13 @@ class CartScreen extends StatelessWidget {
                       '/client/order-confirmation',
                       arguments: orderId,
                     );
+                    
                   },
                   child: const Text(
                     'Confirmar Pedido',
                     style: TextStyle(fontSize: 16, color: Colors.white),
                   ),
+                  
                 ),
               ],
             ),

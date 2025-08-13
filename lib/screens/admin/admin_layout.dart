@@ -69,10 +69,6 @@ class _AdminLayoutState extends State<AdminLayout> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Administrador'),
-        automaticallyImplyLeading: false,
-      ),
       body: widget.child,
       bottomNavigationBar: AdminNavBar(
         currentIndex: _currentIndex,

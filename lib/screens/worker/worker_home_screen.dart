@@ -1,16 +1,34 @@
 // lib/screens/worker/worker_home_screen.dart
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class WorkerHomeScreen extends StatelessWidget {
   const WorkerHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+      Future<void> _signOut(BuildContext context) async {
+        try {
+          await Supabase.instance.client.auth.signOut();
+          Navigator.pushReplacementNamed(context, '/login');
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          );
+        }
+      }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Inicio del Trabajador'),
         centerTitle: true,
         backgroundColor: Colors.deepPurple,
+        actions: [
+          IconButton(
+            onPressed: () => _signOut(context),
+            icon: const Icon(Icons.exit_to_app),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0),
