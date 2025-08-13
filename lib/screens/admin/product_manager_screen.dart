@@ -5,6 +5,9 @@ import '../../models/category.dart';
 import '../../services/category_service.dart';
 import '../../services/product_service.dart';
 import '../../services/auth_service.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:io';
 
 class ProductManagerScreen extends StatefulWidget {
   const ProductManagerScreen({super.key});
@@ -13,12 +16,173 @@ class ProductManagerScreen extends StatefulWidget {
   State<ProductManagerScreen> createState() => _ProductManagerScreenState();
 }
 
+
+
 class _ProductManagerScreenState extends State<ProductManagerScreen> {
   late Future<List<Product>> _productsFuture;
   late Future<List<Category>> _categoriesFuture;
   String? _selectedCategoryId;
   final TextEditingController _categoryController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
+
+  // Función mejorada para seleccionar y subir imagen con vista previa
+  Future<String?> _pickAndUploadImage(String restaurantId, {String? oldImageUrl}) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024, // Optimizar tamaño
+      maxHeight: 1024,
+      imageQuality: 85, // Comprimir para menor peso
+    );
+    
+    if (pickedFile == null) return null;
+
+    final file = File(pickedFile.path);
+    
+    // Crear nombre de archivo organizado por restaurante
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final extension = pickedFile.name.split('.').last;
+    final fileName = 'productos/$restaurantId/${timestamp}_producto.$extension';
+
+    try {
+      // Mostrar indicador de carga
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Subiendo imagen...'),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // Subir imagen
+      await Supabase.instance.client.storage
+          .from('imgs.restaurantes')
+          .upload(fileName, file);
+
+      // Cerrar indicador de carga
+      if (mounted) Navigator.pop(context);
+
+      // Si hay una imagen anterior, eliminarla para ahorrar espacio
+      if (oldImageUrl != null && oldImageUrl.isNotEmpty) {
+        try {
+          final oldFileName = oldImageUrl.split('/').last;
+          await Supabase.instance.client.storage
+              .from('imgs.restaurantes')
+              .remove(['productos/$restaurantId/$oldFileName']);
+        } catch (e) {
+          debugPrint('Error eliminando imagen anterior: $e');
+        }
+      }
+
+      // Retornar URL pública
+      return Supabase.instance.client.storage
+          .from('imgs.restaurantes')
+          .getPublicUrl(fileName);
+
+    } catch (e) {
+      // Cerrar indicador de carga si hay error
+      if (mounted) Navigator.pop(context);
+      
+      debugPrint('Error subiendo imagen: $e');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error subiendo imagen: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return null;
+    }
+  }
+
+  Widget _buildImagePreview(String? imageUrl, VoidCallback onSelectImage, {bool isRequired = false}) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'Imagen del producto${isRequired ? ' *' : ''}',
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+      ),
+      const SizedBox(height: 8),
+      GestureDetector(
+        onTap: onSelectImage,
+        child: Container(
+          width: double.infinity,
+          height: 150,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey[400]!),
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.grey[50],
+          ),
+          child: imageUrl != null
+              ? Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(11),
+                      child: Image.network(
+                        imageUrl,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return const Center(child: CircularProgressIndicator());
+                        },
+                        errorBuilder: (_, __, ___) => const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.error, color: Colors.red, size: 40),
+                              Text('Error cargando imagen'),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.edit,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.add_photo_alternate, size: 48, color: Colors.grey),
+                    SizedBox(height: 8),
+                    Text(
+                      'Toca para seleccionar imagen',
+                      style: TextStyle(color: Colors.grey, fontSize: 14),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    ],
+  );
+}
 
   @override
   void initState() {
@@ -399,323 +563,395 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
     );
   }
 
-  void _showAddProductDialog(BuildContext context, String restaurantId) {
-    final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController();
-    final descriptionController = TextEditingController();
-    final priceController = TextEditingController();
-    String? selectedCategoryId;
+void _showAddProductDialog(BuildContext context, String restaurantId) {
+  final formKey = GlobalKey<FormState>();
+  final nameController = TextEditingController();
+  final descriptionController = TextEditingController();
+  final priceController = TextEditingController();
+  String? selectedCategoryId;
+  String? selectedImageUrl;
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return FutureBuilder<List<Category>>(
-          future: _categoriesFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            
-            if (snapshot.hasError) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return FutureBuilder<List<Category>>(
+            future: _categoriesFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              
+              if (snapshot.hasError) {
+                return AlertDialog(
+                  title: const Text('Error'),
+                  content: Text('No se pudieron cargar las categorías: ${snapshot.error}'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                );
+              }
+              
+              final categories = snapshot.data ?? [];
+              
+              if (categories.isEmpty) {
+                return AlertDialog(
+                  title: const Text('No hay categorías'),
+                  content: const Text('Debes crear al menos una categoría antes de agregar productos.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showAddCategoryDialog(context, restaurantId);
+                      },
+                      child: const Text('Crear Categoría'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancelar'),
+                    ),
+                  ],
+                );
+              }
+              
+              selectedCategoryId ??= categories.first.id;
+              
               return AlertDialog(
-                title: const Text('Error'),
-                content: Text('No se pudieron cargar las categorías: ${snapshot.error}'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('OK'),
+                title: const Text('Agregar Producto'),
+                content: Form(
+                  key: formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Vista previa de imagen
+                        _buildImagePreview(
+                          selectedImageUrl,
+                          () async {
+                            final imageUrl = await _pickAndUploadImage(restaurantId);
+                            if (imageUrl != null) {
+                              setState(() {
+                                selectedImageUrl = imageUrl;
+                              });
+                            }
+                          },
+                          isRequired: true,
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        TextFormField(
+                          controller: nameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Nombre *',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (value) => value!.isEmpty ? 'El nombre es requerido' : null,
+                          textCapitalization: TextCapitalization.words,
+                        ),
+                        const SizedBox(height: 12),
+                        
+                        TextFormField(
+                          controller: descriptionController,
+                          decoration: const InputDecoration(
+                            labelText: 'Descripción',
+                            border: OutlineInputBorder(),
+                            hintText: 'Describe tu producto...',
+                          ),
+                          maxLines: 3,
+                          textCapitalization: TextCapitalization.sentences,
+                        ),
+                        const SizedBox(height: 12),
+                        
+                        TextFormField(
+                          controller: priceController,
+                          decoration: const InputDecoration(
+                            labelText: 'Precio *',
+                            border: OutlineInputBorder(),
+                            prefixText: '\$ ',
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          validator: (value) {
+                            if (value!.isEmpty) return 'El precio es requerido';
+                            final price = double.tryParse(value);
+                            if (price == null) return 'Ingresa un número válido';
+                            if (price <= 0) return 'El precio debe ser mayor a 0';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        
+                        DropdownButtonFormField<String>(
+                          value: selectedCategoryId,
+                          decoration: const InputDecoration(
+                            labelText: 'Categoría *',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: categories
+                              .map((category) => DropdownMenuItem(
+                                    value: category.id,
+                                    child: Text(category.nombre),
+                                  ))
+                              .toList(),
+                          onChanged: (value) => selectedCategoryId = value,
+                          validator: (value) => value == null ? 'Selecciona una categoría' : null,
+                        ),
+                        const SizedBox(height: 8),
+                        
+                        TextButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _showAddCategoryDialog(context, restaurantId);
+                          },
+                          icon: const Icon(Icons.add),
+                          label: const Text('Agregar nueva categoría'),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              );
-            }
-            
-            final categories = snapshot.data ?? [];
-            
-            if (categories.isEmpty) {
-              return AlertDialog(
-                title: const Text('No hay categorías'),
-                content: const Text('Debes crear al menos una categoría antes de agregar productos.'),
+                ),
                 actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _showAddCategoryDialog(context, restaurantId);
-                      // After the category dialog closes, reopen the add product dialog
-                      // This can be improved with async/await if _showAddCategoryDialog returns Future
-                      Future.delayed(const Duration(milliseconds: 300), () {
-                        _showAddProductDialog(context, restaurantId);
-                      });
-                    },
-                    child: const Text('Crear Categoría'),
-                  ),
                   TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: const Text('Cancelar'),
                   ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      if (formKey.currentState!.validate()) {
+                        // Validar que se haya seleccionado imagen
+                        if (selectedImageUrl == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Debes seleccionar una imagen para el producto'),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                          return;
+                        }
+
+                        try {
+                          final service = Provider.of<ProductService>(context, listen: false);
+                          final newProduct = Product(
+                            id: DateTime.now().millisecondsSinceEpoch.toString(),
+                            nombre: nameController.text.trim(),
+                            description: descriptionController.text.trim(),
+                            precio: double.parse(priceController.text),
+                            imagenUrl: selectedImageUrl,
+                            idCategoria: selectedCategoryId!,
+                            idRestaurante: restaurantId,
+                            createdAt: DateTime.now(),
+                          );
+
+                          await service.createProduct(newProduct);
+                          
+                          Navigator.pop(context);
+                          _loadData();
+                          
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Producto "${newProduct.nombre}" agregado exitosamente'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error al agregar producto: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    child: const Text('Guardar Producto'),
+                  ),
                 ],
               );
-            }
-            
-            selectedCategoryId ??= categories.first.id;
-            
-            return AlertDialog(
-              title: const Text('Agregar Producto'),
-              content: Form(
-                key: formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextFormField(
-                        controller: nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nombre',
-                          border: OutlineInputBorder(),
+            },
+          );
+        },
+      );
+    },
+  );
+}
+
+void _showEditProductDialog(BuildContext context, Product product) {
+  final formKey = GlobalKey<FormState>();
+  final nameController = TextEditingController(text: product.nombre);
+  final descriptionController = TextEditingController(text: product.description);
+  final priceController = TextEditingController(text: product.precio.toString());
+  String? selectedCategoryId = product.idCategoria;
+  String? selectedImageUrl = product.imagenUrl; // Imagen actual
+  bool imageChanged = false; // Flag para saber si cambió la imagen
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return FutureBuilder<List<Category>>(
+            future: _categoriesFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              
+              if (snapshot.hasError) {
+                return AlertDialog(
+                  title: const Text('Error'),
+                  content: Text('No se pudieron cargar las categorías: ${snapshot.error}'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                );
+              }
+              
+              final categories = snapshot.data ?? [];
+              final authService = Provider.of<AuthService>(context, listen: false);
+              final restaurantId = authService.currentRestaurant?.id ?? '';
+              
+              return AlertDialog(
+                title: const Text('Editar Producto'),
+                content: Form(
+                  key: formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Vista previa de imagen
+                        _buildImagePreview(
+                          selectedImageUrl,
+                          () async {
+                            final imageUrl = await _pickAndUploadImage(
+                              restaurantId,
+                              oldImageUrl: imageChanged ? null : product.imagenUrl,
+                            );
+                            if (imageUrl != null) {
+                              setState(() {
+                                selectedImageUrl = imageUrl;
+                                imageChanged = true;
+                              });
+                            }
+                          },
                         ),
-                        validator: (value) => value!.isEmpty ? 'Requerido' : null,
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: descriptionController,
-                        decoration: const InputDecoration(
-                          labelText: 'Descripción',
-                          border: OutlineInputBorder(),
+                        const SizedBox(height: 16),
+                        
+                        TextFormField(
+                          controller: nameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Nombre *',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (value) => value!.isEmpty ? 'El nombre es requerido' : null,
+                          textCapitalization: TextCapitalization.words,
                         ),
-                        maxLines: 2,
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: priceController,
-                        decoration: const InputDecoration(
-                          labelText: 'Precio',
-                          border: OutlineInputBorder(),
+                        const SizedBox(height: 12),
+                        
+                        TextFormField(
+                          controller: descriptionController,
+                          decoration: const InputDecoration(
+                            labelText: 'Descripción',
+                            border: OutlineInputBorder(),
+                            hintText: 'Describe tu producto...',
+                          ),
+                          maxLines: 3,
+                          textCapitalization: TextCapitalization.sentences,
                         ),
-                        keyboardType: TextInputType.numberWithOptions(decimal: true),
-                        validator: (value) {
-                          if (value!.isEmpty) return 'Requerido';
-                          if (double.tryParse(value) == null) return 'Número inválido';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        value: selectedCategoryId,
-                        decoration: const InputDecoration(
-                          labelText: 'Categoría',
-                          border: OutlineInputBorder(),
+                        const SizedBox(height: 12),
+                        
+                        TextFormField(
+                          controller: priceController,
+                          decoration: const InputDecoration(
+                            labelText: 'Precio *',
+                            border: OutlineInputBorder(),
+                            prefixText: '\$ ',
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          validator: (value) {
+                            if (value!.isEmpty) return 'El precio es requerido';
+                            final price = double.tryParse(value);
+                            if (price == null) return 'Ingresa un número válido';
+                            if (price <= 0) return 'El precio debe ser mayor a 0';
+                            return null;
+                          },
                         ),
-                        items: categories
-                            .map((category) => DropdownMenuItem(
-                                  value: category.id,
-                                  child: Text(category.nombre),
-                                ))
-                            .toList(),
-                        onChanged: (value) => selectedCategoryId = value,
-                        validator: (value) => value == null ? 'Seleccione una categoría' : null,
-                      ),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _showAddCategoryDialog(context, restaurantId);
-                          Future.delayed(const Duration(milliseconds: 300), () {
-                            _showAddProductDialog(context, restaurantId);
-                          });
-                        },
-                        child: const Text('+ Agregar nueva categoría'),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        
+                        DropdownButtonFormField<String>(
+                          value: selectedCategoryId,
+                          decoration: const InputDecoration(
+                            labelText: 'Categoría *',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: categories
+                              .map((category) => DropdownMenuItem(
+                                    value: category.id,
+                                    child: Text(category.nombre),
+                                  ))
+                              .toList(),
+                          onChanged: (value) => selectedCategoryId = value,
+                          validator: (value) => value == null ? 'Selecciona una categoría' : null,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (formKey.currentState!.validate() && selectedCategoryId != null) {
-                      try {
-                        final service = Provider.of<ProductService>(context, listen: false);
-                        final newProduct = Product(
-                          id: DateTime.now().millisecondsSinceEpoch.toString(),
-                          nombre: nameController.text,
-                          description: descriptionController.text,
-                          precio: double.parse(priceController.text),
-                          imagenUrl: '',
-                          idCategoria: selectedCategoryId!,
-                          idRestaurante: restaurantId,
-                          createdAt: DateTime.now(),
-                        );
-
-                        await service.createProduct(newProduct);
-                        
-                        Navigator.pop(context);
-                        _loadData();
-                        
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Producto "${newProduct.nombre}" agregado'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error al agregar producto: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  child: const Text('Guardar'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showEditProductDialog(BuildContext context, Product product) {
-    final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController(text: product.nombre);
-    final descriptionController = TextEditingController(text: product.description);
-    final priceController = TextEditingController(text: product.precio.toString());
-    String? selectedCategoryId = product.idCategoria;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return FutureBuilder<List<Category>>(
-          future: _categoriesFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            
-            if (snapshot.hasError) {
-              return AlertDialog(
-                title: const Text('Error'),
-                content: Text('No se pudieron cargar las categorías: ${snapshot.error}'),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('OK'),
+                    child: const Text('Cancelar'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      if (formKey.currentState!.validate() && selectedCategoryId != null) {
+                        try {
+                          final service = Provider.of<ProductService>(context, listen: false);
+                          final updatedProduct = product.copyWith(
+                            nombre: nameController.text.trim(),
+                            description: descriptionController.text.trim(),
+                            precio: double.parse(priceController.text),
+                            idCategoria: selectedCategoryId!,
+                            imagenUrl: selectedImageUrl, // Usar la imagen actual o la nueva
+                          );
+
+                          await service.updateProduct(updatedProduct);
+                          
+                          Navigator.pop(context);
+                          _loadData();
+                          
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Producto "${updatedProduct.nombre}" actualizado exitosamente'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error al actualizar producto: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    child: const Text('Guardar Cambios'),
                   ),
                 ],
               );
-            }
-            
-            final categories = snapshot.data ?? [];
-            
-            return AlertDialog(
-              title: const Text('Editar Producto'),
-              content: Form(
-                key: formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextFormField(
-                        controller: nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nombre',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) => value!.isEmpty ? 'Requerido' : null,
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: descriptionController,
-                        decoration: const InputDecoration(
-                          labelText: 'Descripción',
-                          border: OutlineInputBorder(),
-                        ),
-                        maxLines: 2,
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: priceController,
-                        decoration: const InputDecoration(
-                          labelText: 'Precio',
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.numberWithOptions(decimal: true),
-                        validator: (value) {
-                          if (value!.isEmpty) return 'Requerido';
-                          if (double.tryParse(value) == null) return 'Número inválido';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        value: selectedCategoryId,
-                        decoration: const InputDecoration(
-                          labelText: 'Categoría',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: categories
-                            .map((category) => DropdownMenuItem(
-                                  value: category.id,
-                                  child: Text(category.nombre),
-                                ))
-                            .toList(),
-                        onChanged: (value) => selectedCategoryId = value,
-                        validator: (value) => value == null ? 'Seleccione una categoría' : null,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (formKey.currentState!.validate() && selectedCategoryId != null) {
-                      try {
-                        final service = Provider.of<ProductService>(context, listen: false);
-                        final updatedProduct = product.copyWith(
-                          nombre: nameController.text,
-                          description: descriptionController.text,
-                          precio: double.parse(priceController.text),
-                          idCategoria: selectedCategoryId!,
-                        );
-
-                        await service.updateProduct(updatedProduct);
-                        
-                        Navigator.pop(context);
-                        _loadData();
-                        
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Producto "${updatedProduct.nombre}" actualizado'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error al actualizar: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  child: const Text('Guardar Cambios'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
+            },
+          );
+        },
+      );
+    },
+  );
+}
 }
