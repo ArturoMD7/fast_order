@@ -30,4 +30,6 @@ flutter:
   assets:
     - .env
     - assets/imgs/logo_fast.png
+    - assets/imgs/papels.jpg
+
 
