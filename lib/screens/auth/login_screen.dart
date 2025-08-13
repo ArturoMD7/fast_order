@@ -83,17 +83,6 @@ class _LoginScreenState extends State<LoginScreen> {
         .select('id')
         .eq('id', userId)
         .maybeSingle();
-
-      if (existingUser == null) {
-        // Si no existe, lo creamos con datos básicos
-        await supabase.from('Usuarios').insert({
-          'id': userId,
-          'email': user.email,
-          'rol': 'cliente', // Rol por defecto
-          'nombre': 'Nuevo Usuario',
-          'created_at': DateTime.now().toIso8601String(),
-        });
-      }
     } catch (e) {
       throw Exception('Error al verificar perfil de usuario: ${e.toString()}');
     }
