@@ -19,7 +19,7 @@ class AdminHomeScreen extends StatelessWidget {
       );
     }
 
-      Future<void> _signOut(BuildContext context) async {
+      Future<void> signOut(BuildContext context) async {
       try {
         await Supabase.instance.client.auth.signOut();
         Navigator.pushReplacementNamed(context, '/login');
@@ -40,7 +40,7 @@ class AdminHomeScreen extends StatelessWidget {
         elevation: 2,
         actions: [
           IconButton(
-            onPressed: () => _signOut(context),
+            onPressed: () => signOut(context),
             icon: const Icon(Icons.exit_to_app),
           ),
         ],
@@ -114,7 +114,7 @@ class AdminHomeScreen extends StatelessWidget {
                 icon: const Icon(Icons.logout),
                 label: const Text('Cerrar sesión'),
                 onPressed: () async {
-                  await _signOut(context);
+                  await signOut(context);
                 },
               ),
             ),

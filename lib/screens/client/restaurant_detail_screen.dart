@@ -41,7 +41,7 @@ class RestaurantDetailScreen extends StatelessWidget {
             Stack(
               alignment: Alignment.bottomLeft,
               children: [
-                Container(
+                SizedBox(
                   height: 200,
                   width: double.infinity,
                   child: Image.asset(

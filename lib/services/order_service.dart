@@ -2,7 +2,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/order.dart';
-import '../models/product.dart';
 
 class OrderService with ChangeNotifier {
   final SupabaseClient _supabase = Supabase.instance.client;
