@@ -17,18 +17,18 @@ class RoleLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     if (route.startsWith('/client/')) {
       return ClientLayout(
-        child: child,
         currentRoute: route,
+        child: child,
       );
     } else if (route.startsWith('/worker/')) {
       return WorkerLayout(
-        child: child,
         currentRoute: route,
+        child: child,
       );
     } else if (route.startsWith('/admin/')) {
       return AdminLayout(
-        child: child,
         currentRoute: route,
+        child: child,
       );
     }
     return Scaffold(body: child); // Para rutas sin layout específico (login, register)
