@@ -6,6 +6,8 @@ class Restaurant {
   final String? tokenQrActual;
   final DateTime? fechaQrGenerado;
   final DateTime createdAt;
+  final String? mesa; // Nuevo campo
+  final String? tokenQr;
 
   Restaurant({
     required this.id,
@@ -13,6 +15,8 @@ class Restaurant {
     this.description,
     this.tokenQrActual,
     this.fechaQrGenerado,
+    this.mesa,
+    this.tokenQr,
     required this.createdAt,
   });
 
@@ -26,6 +30,8 @@ class Restaurant {
           ? DateTime.parse(json['fecha_qr_generado']) 
           : null,
       createdAt: DateTime.parse(json['created_at']),
+      mesa: json['mesa'],
+      tokenQr: json['token_qr'],
     );
   }
 
