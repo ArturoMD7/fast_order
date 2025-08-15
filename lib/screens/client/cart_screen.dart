@@ -130,47 +130,43 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Future<void> _confirmOrder() async {
-    try {
-      final user = supabase.auth.currentUser;
-      if (user == null || _restaurantId == null) return;
+  try {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
 
-      final orderService = Provider.of<OrderService>(context, listen: false);
+    // Cambiar estado de todos los productos del carrito
+    await supabase
+        .from('Pedidos')
+        .update({'estado': 'pedido'})
+        .eq('id_usuario', user.id)
+        .eq('estado', 'sin_pedido');
 
-      // Crear el pedido principal
-      final orderId = await orderService.createOrder(
-        restaurantId: _restaurantId!,
-        tableId: _tableId, productId: "productId",
-        quantity: 1, 
+    // Vaciar el carrito en memoria
+    setState(() {
+      _cartItems.clear();
+    });
+
+    // Mostrar mensaje de éxito
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pedido enviado con éxito'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
       );
-
-      // Actualizar estado de los items a "pedido" y asignar el orderId
-      await supabase
-          .from('Pedidos')
-          .update({
-            'estado': 'pedido',
-            'id_orden': orderId,
-          })
-          .eq('id_usuario', user.id)
-          .eq('estado', 'sin_pedido');
-
-      if (mounted) {
-        Navigator.pushNamed(
-          context,
-          '/client/order-confirmation',
-          arguments: orderId,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al confirmar pedido: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al confirmar pedido: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {

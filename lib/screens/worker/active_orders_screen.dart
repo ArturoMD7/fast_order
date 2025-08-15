@@ -111,6 +111,7 @@ class _ActiveOrdersScreenState extends State<ActiveOrdersScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pedidos Activos'),
+        backgroundColor: Color(0xFFD2691E),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
