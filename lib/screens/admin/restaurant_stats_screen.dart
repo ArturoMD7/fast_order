@@ -7,7 +7,7 @@ class RestaurantStatsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Colors.deepPurple;
+    final primaryColor = const Color(0xFFD2691E);
 
 
     return Scaffold(

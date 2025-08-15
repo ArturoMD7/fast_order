@@ -8,6 +8,7 @@ class AdminHomeScreen extends StatefulWidget {
 
   @override
   State<AdminHomeScreen> createState() => _AdminHomeScreenState();
+  final primaryColor = const Color(0xFFD2691E);
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
@@ -33,7 +34,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Restaurante no encontrado. Verifique su conexión.'),
-              backgroundColor: Colors.orange,
+              backgroundColor:  Color(0xFFD2691E),
             ),
           );
         }
@@ -48,6 +49,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     final authService = Provider.of<AuthService>(context);
     final user = authService.currentUser;
     final restaurant = authService.currentRestaurant;
+    final primaryColor = const Color(0xFFD2691E);
     
     // Obtener el tamaño de pantalla para responsividad
     final screenWidth = MediaQuery.of(context).size.width;
@@ -109,15 +111,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       }
     }
 
-    final primaryColor = Colors.deepPurple;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(
           restaurant.nombre,
           style: TextStyle(fontSize: isTablet ? 22 : 20),
         ),
-        backgroundColor: Colors.deepOrange,
+        backgroundColor: primaryColor,
         elevation: 2,
         actions: [
           IconButton(

@@ -230,7 +230,7 @@ class _ProductManagerScreenState extends State<ProductManagerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Colors.deepPurple;
+    final primaryColor = const Color(0xFFD2691E);
     final authService = Provider.of<AuthService>(context);
     final restaurantId = authService.currentRestaurant?.id ?? '';
 
