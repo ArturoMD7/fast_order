@@ -9,10 +9,6 @@ Aquí tienes tu README mejorado, con formato más limpio, correcciones de estilo
 [![Supabase](https://img.shields.io/badge/-Supabase-3ECF8E?logo=supabase\&logoColor=white)](https://supabase.com/)
 [![Firebase](https://img.shields.io/badge/-Firebase-FFCA28?logo=firebase\&logoColor=black)](https://firebase.google.com/)
 
-## 📱 Tecnologías Clave
-
----
-
 ## 📖 Descripción
 
 **FastOrder** es una aplicación móvil para restaurantes que permite a los clientes realizar pedidos escaneando un **código QR** en la mesa, y a los trabajadores gestionar dichos pedidos y generar nuevos códigos QR para las mesas.
