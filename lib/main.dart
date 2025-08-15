@@ -32,12 +32,13 @@ import 'package:fast_order/widgets/common/role_layout.dart';
 
 void main() async {
   await dotenv.load(fileName: ".env");
-  late final url = dotenv.env['SUPABASE_URL'];
-  late final key = dotenv.env['SUPABASE_KEY'];
+  final url = dotenv.env['SUPABASE_URL']!;
+  final key = dotenv.env['SUPABASE_KEY']!;
   await Supabase.initialize(
-    url: url!,
-    anonKey: key!,
+    url: url,
+    anonKey: key,
   );
+
   runApp(
     MultiProvider(
       providers: [
@@ -54,13 +55,13 @@ void main() async {
 
 final ColorScheme customColorScheme = const ColorScheme(
   brightness: Brightness.light,
-  primary: Color(0xFFd84315),         // Deep orange (principal / botones)
-  onPrimary: Colors.white,            // Texto sobre color primario
-  secondary: Color(0xFF8bc34a),       // Green (acento / acciones secundarias)
+  primary: Color(0xFFd84315),
+  onPrimary: Colors.white,
+  secondary: Color(0xFF8bc34a),
   onSecondary: Colors.white,
-  surface: Color(0xFFFFFFFF),         // Fondo de tarjetas
+  surface: Color(0xFFFFFFFF),
   onSurface: Color(0xFF2e2e2e),
-  error: Color(0xFFd32f2f),           // Rojo error
+  error: Color(0xFFd32f2f),
   onError: Colors.white,
 );
 
@@ -91,7 +92,6 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-
       initialRoute: '/login',
       routes: {
         '/register': (context) => const RegisterScreen(),
@@ -156,11 +156,44 @@ class MyApp extends StatelessWidget {
               route: '/admin/restaurant-stats',
               child: const RestaurantStatsScreen(),
             ),
-        '/admin/user-management': (context) => RoleLayout(
-              route: '/admin/user-management',
-              child: const UserManagementScreen(),
+        '/admin/user-management': (context) => FutureBuilder<Map<String, dynamic>?>(
+              future: _getCurrentUserRestaurantId(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (!snapshot.hasData || snapshot.data == null) {
+                  return const Scaffold(
+                    body: Center(child: Text('No se pudo obtener el restaurante del usuario')),
+                  );
+                }
+
+                final restauranteId = snapshot.data!['id_restaurante'].toString();
+
+                return RoleLayout(
+                  route: '/admin/user-management',
+                  child: UserManagementScreen(idRestaurante: restauranteId),
+                );
+              },
             ),
       },
     );
   }
+}
+
+// Función para obtener el id_restaurante del usuario logueado
+Future<Map<String, dynamic>?> _getCurrentUserRestaurantId() async {
+  final supabase = Supabase.instance.client;
+  final userId = supabase.auth.currentUser?.id;
+  if (userId == null) return null;
+
+  final response = await supabase
+      .from('Usuarios')
+      .select('id_restaurante')
+      .eq('id', userId)
+      .maybeSingle();
+
+  return response;
 }
