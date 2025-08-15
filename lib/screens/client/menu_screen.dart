@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/category.dart';
 import '../../models/product.dart';
 import '../../models/restaurant.dart';
+import '../../models/user.dart';
 import '../../services/category_service.dart';
 import '../../services/product_service.dart';
 
@@ -17,14 +18,73 @@ class MenuScreen extends StatefulWidget {
 class _MenuScreenState extends State<MenuScreen> {
   final supabase = Supabase.instance.client;
   int _cartItemCount = 0;
+  bool _hasValidToken = false;
+  bool _isLoadingUser = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkUserToken();
+  }
+
+  Future<void> _checkUserToken() async {
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) {
+        setState(() {
+          _isLoadingUser = false;
+          _hasValidToken = false;
+        });
+        return;
+      }
+
+      final userData = await supabase
+          .from('Usuarios')
+          .select('token_qr_actual, fecha_qr_generado')
+          .eq('id', user.id)
+          .single();
+
+      setState(() {
+        _hasValidToken = userData['token_qr_actual'] != null && 
+                        userData['fecha_qr_generado'] != null;
+        _isLoadingUser = false;
+      });
+    } catch (e) {
+      debugPrint('Error checking user token: $e');
+      setState(() {
+        _isLoadingUser = false;
+        _hasValidToken = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingUser) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 20),
+              Text(
+                'Verificando acceso...',
+                style: TextStyle(
+                  color: Theme.of(context).primaryColor,
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final restaurant = ModalRoute.of(context)!.settings.arguments as Restaurant;
     final primaryColor = const Color(0xFFD2691E);
     final secondaryColor = const Color(0xFFF4A460);
     final backgroundColor = const Color(0xFFFFF8F0);
-    final accentColor = const Color(0xFF8B4513);
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -95,10 +155,7 @@ class _MenuScreenState extends State<MenuScreen> {
                       return _buildCategoryProducts(
                         context: context,
                         category: category,
-                        restaurant: restaurant,
                         primaryColor: primaryColor,
-                        secondaryColor: secondaryColor,
-                        accentColor: accentColor,
                       );
                     }).toList(),
                   ),
@@ -111,7 +168,16 @@ class _MenuScreenState extends State<MenuScreen> {
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: primaryColor,
         onPressed: () {
-          Navigator.pushNamed(context, '/client/cart');
+          if (_hasValidToken) {
+            Navigator.pushNamed(context, '/client/cart');
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Debes escanear un código QR de mesa para ver tu pedido'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
         },
         icon: Badge(
           label: Text(_cartItemCount.toString()),
@@ -126,10 +192,7 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget _buildCategoryProducts({
     required BuildContext context,
     required Category category,
-    required Restaurant restaurant,
     required Color primaryColor,
-    required Color secondaryColor,
-    required Color accentColor,
   }) {
     return FutureBuilder<List<Product>>(
       future: Provider.of<ProductService>(context, listen: false)
@@ -166,10 +229,7 @@ class _MenuScreenState extends State<MenuScreen> {
             final product = products[index];
             return _buildProductItem(
               product: product,
-              restaurant: restaurant,
               primaryColor: primaryColor,
-              secondaryColor: secondaryColor,
-              accentColor: accentColor,
             );
           },
         );
@@ -179,10 +239,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
   Widget _buildProductItem({
     required Product product,
-    required Restaurant restaurant,
     required Color primaryColor,
-    required Color secondaryColor,
-    required Color accentColor,
   }) {
     return Card(
       elevation: 2,
@@ -221,9 +278,7 @@ class _MenuScreenState extends State<MenuScreen> {
                       size: 40,
                     ),
             ),
-            
             const SizedBox(width: 12),
-            
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,7 +290,6 @@ class _MenuScreenState extends State<MenuScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  
                   if (product.description != null && product.description!.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
@@ -249,9 +303,7 @@ class _MenuScreenState extends State<MenuScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  
                   const SizedBox(height: 8),
-                  
                   Text(
                     '\$${product.precio.toStringAsFixed(2)}',
                     style: TextStyle(
@@ -263,17 +315,15 @@ class _MenuScreenState extends State<MenuScreen> {
                 ],
               ),
             ),
-            
-            IconButton(
-              icon: Icon(Icons.add_circle, color: primaryColor, size: 30),
-              onPressed: () async {
-                await _addToOrder(
+            // Mostrar botón solo si tiene token válido
+            if (_hasValidToken)
+              IconButton(
+                icon: Icon(Icons.add_circle, color: primaryColor, size: 30),
+                onPressed: () => _addToOrder(
                   product: product,
-                  restaurant: restaurant,
                   context: context,
-                );
-              },
-            ),
+                ),
+              ),
           ],
         ),
       ),
@@ -282,26 +332,30 @@ class _MenuScreenState extends State<MenuScreen> {
 
   Future<void> _addToOrder({
     required Product product,
-    required Restaurant restaurant,
     required BuildContext context,
   }) async {
     try {
-      // Obtener el usuario autenticado
       final user = supabase.auth.currentUser;
       if (user == null) {
-        // Redirigir a login si no está autenticado
         Navigator.pushNamed(context, '/login');
         return;
       }
 
-      // Insertar el pedido en Supabase con el ID del usuario
+      // Obtener el token QR del usuario
+      final userData = await supabase
+          .from('Usuarios')
+          .select('token_qr_actual')
+          .eq('id', user.id)
+          .single();
+
       final response = await supabase.from('Pedidos').insert({
         'id_producto': product.id,
-        'id_restaurante': restaurant.id,
-        'id_usuario': user.id, // Usar el ID del usuario autenticado
+        'id_restaurante': (ModalRoute.of(context)!.settings.arguments as Restaurant).id,
+        'id_usuario': user.id,
         'cantidad': 1,
         'fecha': DateTime.now().toIso8601String(),
         'estado': 'sin_pedido',
+        'mesa': userData['token_qr_actual'], // Usar el token como número de mesa
       }).select();
 
       if (response.isNotEmpty) {
