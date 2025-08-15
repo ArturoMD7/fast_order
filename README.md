@@ -1,4 +1,5 @@
 🍽️ FastOrder - Sistema de Pedidos para Restaurantes
+
 https://img.shields.io/badge/-Flutter-02569B?logo=flutter&logoColor=white
 https://img.shields.io/badge/-Dart-0175C2?logo=dart&logoColor=white
 https://img.shields.io/badge/-Supabase-3ECF8E?logo=supabase&logoColor=white
