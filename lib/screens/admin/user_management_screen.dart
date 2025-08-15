@@ -46,134 +46,179 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     }
   }
 
-  Future<void> _deleteWorker(String workerId) async {
-    try {
-      await supabase.from('Usuarios').delete().eq('id', workerId);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Trabajador eliminado'), backgroundColor: Colors.green),
-      );
-      _fetchWorkers();
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al eliminar trabajador: $e'), backgroundColor: Colors.red),
-        );
-      }
-    }
-  }
-
-  void _showAddOrEditUserDialog(BuildContext context, Color primaryColor, {Map<String, dynamic>? worker}) {
+  void _showEditWorkerDialog(BuildContext context, Map<String, dynamic>? worker) {
+    final isEditing = worker != null;
+    final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: worker?['nombre'] ?? '');
     final lastNameController = TextEditingController(text: worker?['apellidos'] ?? '');
     final emailController = TextEditingController(text: worker?['email'] ?? '');
     final passwordController = TextEditingController();
     bool isLoading = false;
-    final isEditing = worker != null;
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          Future<void> saveUser() async {
-            if (nameController.text.trim().isEmpty ||
-                lastNameController.text.trim().isEmpty ||
-                emailController.text.trim().isEmpty ||
-                (!isEditing && passwordController.text.isEmpty)) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('¡Todos los campos son obligatorios!'), backgroundColor: Colors.red),
-              );
-              return;
-            }
-
-            setState(() => isLoading = true);
-
-            try {
-              if (isEditing) {
-                // Actualizar trabajador
-                final updateData = {
-                  'nombre': nameController.text.trim(),
-                  'apellidos': lastNameController.text.trim(),
-                  'email': emailController.text.trim(),
-                };
-                if (passwordController.text.isNotEmpty) {
-                  updateData['contrasena'] = passwordController.text;
-                }
-
-                await supabase.from('Usuarios').update(updateData).eq('id', worker!['id']);
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Trabajador actualizado'), backgroundColor: Colors.green),
-                  );
-                  _fetchWorkers();
-                }
-              } else {
-                // Crear trabajador
-                final authResponse = await supabase.auth.signUp(
-                  email: emailController.text.trim(),
-                  password: passwordController.text.trim(),
-                );
-                if (authResponse.user == null) throw Exception('No se pudo crear el usuario.');
-
-                final userId = authResponse.user!.id;
-
-                await supabase.from('Usuarios').insert({
-                  'id': userId,
-                  'nombre': nameController.text.trim(),
-                  'apellidos': lastNameController.text.trim(),
-                  'email': emailController.text.trim(),
-                  'contrasena': passwordController.text,
-                  'rol': 'trabajador',
-                  'id_restaurante': widget.idRestaurante,
-                  'created_at': DateTime.now().toIso8601String(),
-                });
-
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Trabajador registrado correctamente'), backgroundColor: Colors.green),
-                  );
-                  _fetchWorkers();
-                }
-              }
-            } catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                );
-              }
-            } finally {
-              if (context.mounted) setState(() => isLoading = false);
-            }
-          }
-
-          return AlertDialog(
-            title: Text(isEditing ? 'Editar Trabajador' : 'Registrar Trabajador'),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            content: SingleChildScrollView(
+        builder: (context, setState) => AlertDialog(
+          title: Text(isEditing ? 'Editar Trabajador' : 'Registrar Trabajador'),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextField(controller: nameController, decoration: InputDecoration(labelText: 'Nombre', prefixIcon: Icon(Icons.person, color: primaryColor))),
+                  TextFormField(
+                    controller: nameController,
+                    decoration: const InputDecoration(labelText: 'Nombre'),
+                    validator: (value) => value!.isEmpty ? 'El nombre es requerido' : null,
+                  ),
                   const SizedBox(height: 12),
-                  TextField(controller: lastNameController, decoration: InputDecoration(labelText: 'Apellidos', prefixIcon: Icon(Icons.badge, color: primaryColor))),
+                  TextFormField(
+                    controller: lastNameController,
+                    decoration: const InputDecoration(labelText: 'Apellidos'),
+                    validator: (value) => value!.isEmpty ? 'Los apellidos son requeridos' : null,
+                  ),
                   const SizedBox(height: 12),
-                  TextField(controller: emailController, decoration: InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email, color: primaryColor))),
+                  TextFormField(
+                    controller: emailController,
+                    decoration: const InputDecoration(labelText: 'Email'),
+                    validator: (value) => value!.isEmpty ? 'El email es requerido' : null,
+                  ),
                   const SizedBox(height: 12),
-                  TextField(controller: passwordController, decoration: InputDecoration(labelText: 'Contraseña (opcional)', prefixIcon: Icon(Icons.lock, color: primaryColor)), obscureText: true),
+                  TextFormField(
+                    controller: passwordController,
+                    decoration: const InputDecoration(labelText: 'Contraseña (opcional)'),
+                    obscureText: true,
+                  ),
                 ],
               ),
             ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancelar', style: TextStyle(color: primaryColor))),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                onPressed: isLoading ? null : saveUser,
-                child: isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text(isEditing ? 'Guardar Cambios' : 'Guardar'),
-              ),
-            ],
-          );
-        },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+                      setState(() => isLoading = true);
+
+                      try {
+                        if (isEditing) {
+                          final updateData = {
+                            'nombre': nameController.text.trim(),
+                            'apellidos': lastNameController.text.trim(),
+                            'email': emailController.text.trim(),
+                          };
+                          if (passwordController.text.isNotEmpty) {
+                            updateData['contrasena'] = passwordController.text;
+                          }
+
+                          await supabase
+                              .from('Usuarios')
+                              .update(updateData)
+                              .eq('id', worker!['id']);
+
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Trabajador actualizado'), backgroundColor: Colors.green),
+                            );
+                            _fetchWorkers();
+                          }
+                        } else {
+                          final authResponse = await supabase.auth.signUp(
+                            email: emailController.text.trim(),
+                            password: passwordController.text.trim(),
+                          );
+                          if (authResponse.user == null) throw Exception('No se pudo crear el usuario.');
+
+                          final userId = authResponse.user!.id;
+
+                          await supabase.from('Usuarios').insert({
+                            'id': userId,
+                            'nombre': nameController.text.trim(),
+                            'apellidos': lastNameController.text.trim(),
+                            'email': emailController.text.trim(),
+                            'contrasena': passwordController.text,
+                            'rol': 'trabajador',
+                            'id_restaurante': widget.idRestaurante,
+                            'created_at': DateTime.now().toIso8601String(),
+                          });
+
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Trabajador registrado correctamente'), backgroundColor: Colors.green),
+                            );
+                            _fetchWorkers();
+                          }
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                          );
+                        }
+                      } finally {
+                        if (context.mounted) setState(() => isLoading = false);
+                      }
+                    },
+              child: isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    )
+                  : Text(isEditing ? 'Guardar Cambios' : 'Guardar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteWorker(BuildContext context, Map<String, dynamic> worker) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Confirmar eliminación'),
+        content: Text('¿Eliminar al trabajador "${worker['nombre']} ${worker['apellidos']}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await supabase.from('Usuarios').delete().eq('id', worker['id']);
+                _fetchWorkers();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Trabajador "${worker['nombre']}" eliminado'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error al eliminar trabajador: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }
@@ -208,11 +253,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.edit, color: Colors.blue),
-                              onPressed: () => _showAddOrEditUserDialog(context, primaryColor, worker: worker),
+                              onPressed: () => _showEditWorkerDialog(context, worker),
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteWorker(worker['id']),
+                              onPressed: () => _confirmDeleteWorker(context, worker),
                             ),
                           ],
                         ),
@@ -222,7 +267,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: primaryColor,
-        onPressed: () => _showAddOrEditUserDialog(context, primaryColor),
+        onPressed: () => _showEditWorkerDialog(context, null),
         child: const Icon(Icons.add),
       ),
     );
