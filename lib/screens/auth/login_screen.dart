@@ -174,7 +174,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       height: 100,
                     ),
                     Text(
-                      'Bienvenido a Fast Order',
+                      'Fast Order',
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,

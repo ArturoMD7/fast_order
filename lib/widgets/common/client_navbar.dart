@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/theme.dart';
 
 class ClientNavBar extends StatelessWidget {
   final int currentIndex;
@@ -12,10 +13,15 @@ class ClientNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    final primaryColor = const Color(0xFFD2691E);
+    final secondaryColor = const Color(0xFFF4A460);
+    final backgroundColor = const Color(0xFFFFF8F0);
+
     return BottomNavigationBar(
       currentIndex: currentIndex,
       onTap: onTap,
-      selectedItemColor: Colors.amber, // Color ámbar para ícono y texto seleccionado
+      selectedItemColor: primaryColor , // Color ámbar para ícono y texto seleccionado
       unselectedItemColor: Colors.grey, // Color gris para ícono y texto no seleccionado
       showSelectedLabels: true, // Mostrar texto del ítem seleccionado
       showUnselectedLabels: true, // Mostrar texto de ítems no seleccionados

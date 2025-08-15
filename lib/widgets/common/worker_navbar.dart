@@ -12,10 +12,11 @@ class WorkerNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = const Color(0xFFD2691E);
     return BottomNavigationBar(
       currentIndex: currentIndex,
       onTap: onTap,
-      selectedItemColor: Colors.amber, // Color ámbar para ítem seleccionado
+      selectedItemColor: primaryColor, // Color ámbar para ítem seleccionado
       unselectedItemColor: Colors.grey, // Color gris para ítem no seleccionado
       showSelectedLabels: true, // Mostrar texto del ítem seleccionado
       showUnselectedLabels: true, // Mostrar texto de ítems no seleccionados
