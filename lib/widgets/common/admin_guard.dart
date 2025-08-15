@@ -5,7 +5,7 @@ import '../../services/auth_service.dart';
 class AdminGuard extends StatelessWidget {
   final Widget child;
   
-  const AdminGuard({required this.child, Key? key}) : super(key: key);
+  const AdminGuard({required this.child, super.key});
 
   @override
   Widget build(BuildContext context) {

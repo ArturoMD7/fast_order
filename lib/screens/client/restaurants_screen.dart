@@ -5,7 +5,7 @@ import '../../services/restaurant_service.dart';
 import 'package:flutter/material.dart';
 import '../../models/restaurant.dart';
 import 'package:provider/provider.dart';
-import './restaurant_detail_screen.dart'; // Asegúrate de que la ruta sea correcta
+// Asegúrate de que la ruta sea correcta
 
 class RestaurantsScreen extends StatefulWidget {
   const RestaurantsScreen({super.key});

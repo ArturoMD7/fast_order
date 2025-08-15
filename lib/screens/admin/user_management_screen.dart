@@ -43,7 +43,7 @@ class UserManagementScreen extends StatelessWidget {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            Future<void> _saveUser() async {
+            Future<void> saveUser() async {
               if (nameController.text.trim().isEmpty ||
                   lastNameController.text.trim().isEmpty ||
                   emailController.text.trim().isEmpty ||
@@ -171,7 +171,7 @@ class UserManagementScreen extends StatelessWidget {
                     backgroundColor: primaryColor,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  onPressed: isLoading ? null : _saveUser,
+                  onPressed: isLoading ? null : saveUser,
                   child: isLoading
                       ? const SizedBox(
                           width: 20, height: 20,

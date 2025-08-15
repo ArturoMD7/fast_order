@@ -174,7 +174,7 @@ class AuthService with ChangeNotifier {
           .single();
 
       // Normalize role if necessary
-      final responseData = userResponse as Map<String, dynamic>;
+      final responseData = userResponse;
       if (responseData['rol'] == 'administrador') {
         responseData['rol'] = 'restaurant_admin';
       }

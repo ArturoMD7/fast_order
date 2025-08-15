@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/category.dart';
 import '../../models/product.dart';
 import '../../models/restaurant.dart';
 import '../../services/category_service.dart';
 import '../../services/product_service.dart';
 
-class MenuScreen extends StatelessWidget {
+class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
+
+  @override
+  State<MenuScreen> createState() => _MenuScreenState();
+}
+
+class _MenuScreenState extends State<MenuScreen> {
+  final supabase = Supabase.instance.client;
+  int _cartItemCount = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +38,6 @@ class MenuScreen extends StatelessWidget {
             fontSize: 20,
           ),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
         elevation: 0,
         shape: const RoundedRectangleBorder(
@@ -42,7 +50,6 @@ class MenuScreen extends StatelessWidget {
         future: Provider.of<CategoryService>(context, listen: false)
             .getCategories(restaurantId: restaurant.id),
         builder: (context, categoriesSnapshot) {
-          // Estados de carga y error
           if (categoriesSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: Color(0xFFD2691E)));
           }
@@ -88,6 +95,7 @@ class MenuScreen extends StatelessWidget {
                       return _buildCategoryProducts(
                         context: context,
                         category: category,
+                        restaurant: restaurant,
                         primaryColor: primaryColor,
                         secondaryColor: secondaryColor,
                         accentColor: accentColor,
@@ -103,10 +111,13 @@ class MenuScreen extends StatelessWidget {
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: primaryColor,
         onPressed: () {
-          // Navegar al carrito
-          // Navigator.pushNamed(context, '/client/cart');
+          Navigator.pushNamed(context, '/client/cart');
         },
-        icon: const Icon(Icons.shopping_cart, color: Colors.white),
+        icon: Badge(
+          label: Text(_cartItemCount.toString()),
+          isLabelVisible: _cartItemCount > 0,
+          child: const Icon(Icons.shopping_cart, color: Colors.white),
+        ),
         label: const Text('Ver Pedido', style: TextStyle(color: Colors.white)),
       ),
     );
@@ -115,6 +126,7 @@ class MenuScreen extends StatelessWidget {
   Widget _buildCategoryProducts({
     required BuildContext context,
     required Category category,
+    required Restaurant restaurant,
     required Color primaryColor,
     required Color secondaryColor,
     required Color accentColor,
@@ -154,6 +166,7 @@ class MenuScreen extends StatelessWidget {
             final product = products[index];
             return _buildProductItem(
               product: product,
+              restaurant: restaurant,
               primaryColor: primaryColor,
               secondaryColor: secondaryColor,
               accentColor: accentColor,
@@ -166,6 +179,7 @@ class MenuScreen extends StatelessWidget {
 
   Widget _buildProductItem({
     required Product product,
+    required Restaurant restaurant,
     required Color primaryColor,
     required Color secondaryColor,
     required Color accentColor,
@@ -181,7 +195,6 @@ class MenuScreen extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Imagen del producto
             Container(
               width: 80,
               height: 80,
@@ -211,7 +224,6 @@ class MenuScreen extends StatelessWidget {
             
             const SizedBox(width: 12),
             
-            // Información del producto
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,16 +264,62 @@ class MenuScreen extends StatelessWidget {
               ),
             ),
             
-            // Botón para agregar al carrito
             IconButton(
               icon: Icon(Icons.add_circle, color: primaryColor, size: 30),
-              onPressed: () {
-                // Lógica para agregar al carrito
+              onPressed: () async {
+                await _addToOrder(
+                  product: product,
+                  restaurant: restaurant,
+                  context: context,
+                );
               },
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _addToOrder({
+    required Product product,
+    required Restaurant restaurant,
+    required BuildContext context,
+  }) async {
+    try {
+      // Obtener el usuario autenticado
+      final user = supabase.auth.currentUser;
+      if (user == null) {
+        // Redirigir a login si no está autenticado
+        Navigator.pushNamed(context, '/login');
+        return;
+      }
+
+      // Insertar el pedido en Supabase con el ID del usuario
+      final response = await supabase.from('Pedidos').insert({
+        'id_producto': product.id,
+        'id_restaurante': restaurant.id,
+        'id_usuario': user.id, // Usar el ID del usuario autenticado
+        'cantidad': 1,
+        'fecha': DateTime.now().toIso8601String(),
+        'estado': 'sin_pedido',
+      }).select();
+
+      if (response.isNotEmpty) {
+        setState(() => _cartItemCount++);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${product.nombre} agregado al pedido'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al agregar pedido: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
