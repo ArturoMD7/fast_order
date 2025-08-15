@@ -275,6 +275,57 @@ class AuthService with ChangeNotifier {
       rethrow;
     }
   }
+
+  // Agregar estos métodos a tu AuthService
+
+// Método para actualizar el restaurante actual
+Future<void> updateRestaurant(Map<String, dynamic> restaurantData) async {
+  try {
+    // Convertir el Map a tu modelo Restaurant
+    // Asumiendo que tienes un método fromJson en tu modelo Restaurant
+    _currentRestaurant = Restaurant.fromJson(restaurantData);
+    notifyListeners(); // Notificar a todos los widgets que escuchan
+  } catch (e) {
+    print('Error updating restaurant: $e');
+  }
+}
+
+// Método para refrescar datos del restaurante desde la base de datos
+Future<void> refreshRestaurantData() async {
+  if (_currentRestaurant == null) return;
+  
+  try {
+    final response = await Supabase.instance.client
+        .from('Restaurantes')
+        .select('*')
+        .eq('id', _currentRestaurant!.id)
+        .single();
+
+    await updateRestaurant(response);
+  } catch (e) {
+    print('Error refreshing restaurant data: $e');
+  }
+}
+
+// Método para validar si el restaurante existe y está activo
+Future<bool> validateRestaurant(String restaurantId) async {
+  try {
+    final response = await Supabase.instance.client
+        .from('Restaurantes')
+        .select('*')
+        .eq('id', restaurantId)
+        .maybeSingle(); // Usa maybeSingle para evitar errores si no existe
+
+    if (response != null) {
+      await updateRestaurant(response);
+      return true;
+    }
+    return false;
+  } catch (e) {
+    print('Error validating restaurant: $e');
+    return false;
+  }
+}
 }
 
 enum AuthState {
