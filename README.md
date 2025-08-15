@@ -11,13 +11,6 @@ Aquí tienes tu README mejorado, con formato más limpio, correcciones de estilo
 
 ## 📱 Tecnologías Clave
 
-<div style="display: flex; justify-content: center; gap: 20px; margin: 20px 0;">
-  <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/flutter/flutter-original.svg" alt="Flutter" width="60" height="60">
-  <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/dart/dart-original.svg" alt="Dart" width="60" height="60">
-  <img src="https://supabase.com/favicon.ico" alt="Supabase" width="60" height="60">
-  <img src="https://www.vectorlogo.zone/logos/firebase/firebase-icon.svg" alt="Firebase" width="60" height="60">
-</div>
-
 ---
 
 ## 📖 Descripción
