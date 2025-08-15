@@ -85,9 +85,9 @@ class User {
   // Helper para UI
   String get roleDisplayName {
     return switch (role) {
-      UserRole.client => 'Cliente',
-      UserRole.worker => 'Trabajador',
-      UserRole.restaurantAdmin => 'Administrador',
+      UserRole.client => 'cliente',
+      UserRole.worker => 'trabajador',
+      UserRole.restaurantAdmin => 'administrador',
     };
   }
 }
