@@ -215,7 +215,11 @@ packages:
     source: hosted
     version: "5.2.1"
   flutter_launcher_icons:
+<<<<<<< HEAD
+    dependency: "direct dev"
+=======
     dependency: "direct main"
+>>>>>>> 84dc33ccfc13d3697e2943055e658660d087e67a
     description:
       name: flutter_launcher_icons
       sha256: "10f13781741a2e3972126fae08393d3c4e01fa4cd7473326b94b72cf594195e7"
