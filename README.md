@@ -1,51 +1,73 @@
-🍽️ FastOrder - Sistema de Pedidos para Restaurantes
+Aquí tienes tu README mejorado, con formato más limpio, correcciones de estilo y una estructura más clara para que sea fácil de leer y atractivo en GitHub:
 
-https://img.shields.io/badge/-Flutter-02569B?logo=flutter&logoColor=white
-https://img.shields.io/badge/-Dart-0175C2?logo=dart&logoColor=white
-https://img.shields.io/badge/-Supabase-3ECF8E?logo=supabase&logoColor=white
-https://img.shields.io/badge/-Firebase-FFCA28?logo=firebase&logoColor=black
+---
 
-📱 Tecnologías Clave
-<div style="display: flex; justify-content: center; gap: 20px; margin: 20px 0;"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/flutter/flutter-original.svg" alt="Flutter" width="60" height="60"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/dart/dart-original.svg" alt="Dart" width="60" height="60"> <img src="https://supabase.com/favicon.ico" alt="Supabase" width="60" height="60"> <img src="https://www.vectorlogo.zone/logos/firebase/firebase-icon.svg" alt="Firebase" width="60" height="60"> </div>
+# 🍽️ FastOrder - Sistema de Pedidos para Restaurantes
 
-## Descripción
+[![Flutter](https://img.shields.io/badge/-Flutter-02569B?logo=flutter\&logoColor=white)](https://flutter.dev/)
+[![Dart](https://img.shields.io/badge/-Dart-0175C2?logo=dart\&logoColor=white)](https://dart.dev/)
+[![Supabase](https://img.shields.io/badge/-Supabase-3ECF8E?logo=supabase\&logoColor=white)](https://supabase.com/)
+[![Firebase](https://img.shields.io/badge/-Firebase-FFCA28?logo=firebase\&logoColor=black)](https://firebase.google.com/)
 
-FastOrder es una aplicación móvil que permite a los clientes realizar pedidos en restaurantes escaneando un código QR de mesa, y a los trabajadores gestionar pedidos y generar códigos QR para las mesas.
+## 📱 Tecnologías Clave
 
-## Requisitos Previos
+<div style="display: flex; justify-content: center; gap: 20px; margin: 20px 0;">
+  <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/flutter/flutter-original.svg" alt="Flutter" width="60" height="60">
+  <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/dart/dart-original.svg" alt="Dart" width="60" height="60">
+  <img src="https://supabase.com/favicon.ico" alt="Supabase" width="60" height="60">
+  <img src="https://www.vectorlogo.zone/logos/firebase/firebase-icon.svg" alt="Firebase" width="60" height="60">
+</div>
 
-- [Flutter SDK](https://flutter.dev/docs/get-started/install) (versión 3.0.0 o superior)
-- [Dart SDK](https://dart.dev/get-dart) (incluido con Flutter)
-- [Android Studio](https://developer.android.com/studio) o [Xcode](https://developer.apple.com/xcode/) (para emuladores)
-- Cuenta en [Supabase](https://supabase.com/) para el backend
+---
 
-## Instalación
+## 📖 Descripción
+
+**FastOrder** es una aplicación móvil para restaurantes que permite a los clientes realizar pedidos escaneando un **código QR** en la mesa, y a los trabajadores gestionar dichos pedidos y generar nuevos códigos QR para las mesas.
+
+---
+
+## 📋 Requisitos Previos
+
+* [Flutter SDK](https://flutter.dev/docs/get-started/install) (v3.0.0 o superior)
+* [Dart SDK](https://dart.dev/get-dart) (incluido con Flutter)
+* [Android Studio](https://developer.android.com/studio) o [Xcode](https://developer.apple.com/xcode/)
+* Cuenta en [Supabase](https://supabase.com/) para el backend
+
+---
+
+## ⚙️ Instalación
 
 1. **Clonar el repositorio**:
+
    ```bash
    git clone https://github.com/tu-usuario/fast-order.git
    cd fast-order
    ```
 
 2. **Instalar dependencias**:
+
    ```bash
    flutter pub get
    ```
 
 3. **Configurar variables de entorno**:
-   Crear un archivo `.env` en la raíz del proyecto con las credenciales de Supabase:
-   ```
+   Crear un archivo `.env` en la raíz:
+
+   ```env
    SUPABASE_URL=tu_url_de_supabase
    SUPABASE_ANON_KEY=tu_clave_anonima_de_supabase
    ```
 
 4. **Configurar Supabase**:
-   - Crear las tablas necesarias (ver sección de configuración de base de datos)
-   - Configurar autenticación
 
-## Configuración de la Base de Datos
+   * Crear las tablas necesarias (ver sección de **Base de Datos**)
+   * Configurar autenticación y políticas RLS
 
-Ejecutar estos comandos SQL en Supabase:
+---
+
+## 🗄️ Configuración de la Base de Datos
+
+Ejecuta este script SQL en Supabase:
 
 ```sql
 -- Tabla de Restaurantes
@@ -84,53 +106,60 @@ CREATE TABLE tokens_qr (
 );
 ```
 
-## Ejecución de la Aplicación
+---
 
-### Para desarrollo:
+## 🚀 Ejecución
+
+**Desarrollo**:
 
 ```bash
 flutter run
 ```
 
-### Para construir APK (Android):
+**Construir APK (Android)**:
 
 ```bash
 flutter build apk --release
 ```
 
-### Para construir IPA (iOS):
+**Construir IPA (iOS)**:
 
 ```bash
 flutter build ios --release
 ```
 
-## Estructura del Proyecto
+---
+
+## 📂 Estructura del Proyecto
 
 ```
 fast-order/
 ├── lib/
 │   ├── main.dart          # Punto de entrada
 │   ├── models/            # Modelos de datos
-│   ├── screens/           # Pantallas de la aplicación
-│   ├── services/          # Servicios y providers
-│   └── widgets/           # Componentes reutilizables
-├── android/               # Configuración específica de Android
-├── ios/                   # Configuración específica de iOS
+│   ├── screens/           # Pantallas de la app
+│   ├── services/          # Servicios y lógica
+│   └── widgets/           # Componentes UI
+├── android/               # Configuración Android
+├── ios/                   # Configuración iOS
 └── test/                  # Pruebas
 ```
 
-## Dependencias Principales
+---
 
-- `supabase_flutter`: Conexión con backend Supabase
-- `mobile_scanner`: Escaneo de códigos QR
-- `qr_flutter`: Generación de códigos QR
-- `provider`: Gestión de estado
+## 📦 Dependencias Principales
 
-## Configuración Adicional
+* [`supabase_flutter`](https://pub.dev/packages/supabase_flutter) — Backend Supabase
+* [`mobile_scanner`](https://pub.dev/packages/mobile_scanner) — Escaneo de QR
+* [`qr_flutter`](https://pub.dev/packages/qr_flutter) — Generación de QR
+* [`provider`](https://pub.dev/packages/provider) — Gestión de estado
 
-### Para Android:
+---
 
-Asegúrate de tener en tu `android/app/build.gradle`:
+## ⚠️ Configuración Adicional
+
+**Android**:
+
 ```gradle
 android {
     defaultConfig {
@@ -140,43 +169,56 @@ android {
 }
 ```
 
-### Para iOS:
+**iOS**:
 
-Actualiza el `Podfile` para usar iOS 11.0 o superior:
 ```ruby
 platform :ios, '11.0'
 ```
 
-## Solución de Problemas
+---
 
-Si encuentras problemas al ejecutar la aplicación:
+## 🛠️ Solución de Problemas
 
-1. Verifica que todas las dependencias estén instaladas:
+1. Verifica dependencias:
+
    ```bash
    flutter doctor
    ```
 
-2. Limpia el proyecto y reinstala dependencias:
+2. Limpia y reinstala:
+
    ```bash
    flutter clean
    flutter pub get
    ```
 
-3. Para problemas con Supabase, verifica que:
-   - Las tablas estén creadas correctamente
-   - Las políticas RLS estén configuradas
-   - Las variables de entorno sean correctas
+3. Comprueba en Supabase:
 
-## Contribución
+   * Tablas creadas
+   * Políticas RLS activas
+   * Variables `.env` correctas
 
-Si deseas contribuir al proyecto:
+---
 
-1. Haz un fork del repositorio
-2. Crea una rama con tu feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Haz commit de tus cambios (`git commit -m 'Añade nueva funcionalidad'`)
-4. Haz push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Abre un Pull Request
+## 🤝 Contribución
 
-## Licencia
+1. Haz **fork**
+2. Crea rama:
 
-Este proyecto está bajo la licencia MIT. Ver el archivo [LICENSE](LICENSE) para más detalles.
+   ```bash
+   git checkout -b feature/nueva-funcionalidad
+   ```
+3. Commit:
+
+   ```bash
+   git commit -m "Añade nueva funcionalidad"
+   ```
+4. Push y **Pull Request**
+
+---
+
+## 📄 Licencia
+
+Este proyecto está bajo la licencia **MIT** — ver [LICENSE](LICENSE).
+
+---
