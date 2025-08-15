@@ -21,8 +21,8 @@ class WorkerManagementScreen extends StatelessWidget {
             trailing: IconButton(
               icon: const Icon(Icons.delete),
               onPressed: () {},
-            ),
-          );
+            ),                                         
+          );               
         },
       ),
     );

@@ -77,7 +77,7 @@ class _WorkerQRGeneratorScreenState extends State<WorkerQRGeneratorScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Generador de QR'),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: Color(0xFFD2691E),
         elevation: 0,
         actions: [
           IconButton(
@@ -150,7 +150,7 @@ class _WorkerQRGeneratorScreenState extends State<WorkerQRGeneratorScreen> {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.deepPurple[700],
+                      color: Colors.black,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -185,7 +185,7 @@ class _WorkerQRGeneratorScreenState extends State<WorkerQRGeneratorScreen> {
                         icon: const Icon(Icons.copy),
                         label: const Text('Copiar Token'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.deepPurple,
+                          backgroundColor: Color(0xFFD2691E),
                           foregroundColor: Colors.white,
                         ),
                       ),
@@ -204,7 +204,7 @@ class _WorkerQRGeneratorScreenState extends State<WorkerQRGeneratorScreen> {
                             : const Icon(Icons.refresh),
                         label: Text(_isGenerating ? 'Generando...' : 'Regenerar'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.deepPurple[800],
+                          backgroundColor: Color(0xFFD2691E),
                           foregroundColor: Colors.white,
                         ),
                       ),

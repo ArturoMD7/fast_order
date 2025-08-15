@@ -25,6 +25,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   Future<void> _fetchWorkers() async {
+    final primaryColor = const Color(0xFFD2691E);
     setState(() => isLoadingWorkers = true);
     try {
       final response = await supabase
@@ -230,7 +231,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gestión de Usuarios'),
-        backgroundColor: primaryColor,
+        backgroundColor:Color(0xFFD2691E),
         centerTitle: true,
         elevation: 0,
       ),
@@ -266,7 +267,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   },
                 ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: primaryColor,
+        backgroundColor:Color(0xFFD2691E),
         onPressed: () => _showEditWorkerDialog(context, null),
         child: const Icon(Icons.add),
       ),
