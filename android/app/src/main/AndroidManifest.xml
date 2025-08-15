@@ -7,7 +7,7 @@
     </queries>
     <uses-permission android:name="android.permission.CAMERA"/>
     <application
-        android:label="fast_order"
+        android:label="Fast Order"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
