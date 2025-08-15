@@ -67,11 +67,12 @@ class _OrderStatusScreenState extends State<OrderStatusScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = const Color(0xFFD2691E);
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
         title: const Text('Estado de tus Pedidos'),
-        backgroundColor: Colors.green,
+        backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -151,7 +152,7 @@ class _OrderStatusScreenState extends State<OrderStatusScreen> {
                 ),
       floatingActionButton: FloatingActionButton(
         onPressed: _loadOrders,
-        backgroundColor: Colors.green,
+        backgroundColor: primaryColor,
         child: const Icon(Icons.refresh, color: Colors.white),
       ),
     );

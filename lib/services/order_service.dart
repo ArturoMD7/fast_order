@@ -8,75 +8,76 @@ class OrderService with ChangeNotifier {
   final List<Order> _orders = [];
 
   Future<List<Order>> getActiveOrders(String restaurantId) async {
-    try {
-      final response = await _supabase
-          .from('Pedidos')
-          .select('''
-            *,
-            id_producto:Productos(nombre, precio, imagen_url),
-            id_usuario:Usuarios(nombre)
-          ''')
-          .eq('id_restaurante', restaurantId)
-          .eq('estado', 'pedido') // Solo pedidos activos
-          .order('fecha', ascending: false);
+  try {
+    final response = await _supabase
+        .from('Pedidos')
+        .select('''
+          *,
+          id_producto:Productos(nombre, precio, imagen_url),
+          id_usuario:Usuarios(nombre)
+        ''')
+        .eq('id_restaurante', restaurantId)
+        .eq('estado', 'pedido')
+        .order('fecha', ascending: false);
 
-      return response.map((order) {
-        final productData = order['id_producto'] as Map<String, dynamic>?;
-        final userData = order['id_usuario'] as Map<String, dynamic>?;
+    return response.map((order) {
+      final productData = order['id_producto'] as Map<String, dynamic>?;
+      final userData = order['id_usuario'] as Map<String, dynamic>?;
 
-        return Order(
-          id: order['id'].toString(),
-          restaurantId: order['id_restaurante'].toString(),
-          tableId: order['mesa']?.toString() ?? 'Sin mesa',
-          items: [
-            OrderItem(
-              productId: order['id_producto'].toString(),
-              productName: productData?['nombre'] ?? 'Producto desconocido',
-              quantity: order['cantidad'] ?? 1,
-              price: (productData?['precio'] as num?)?.toDouble() ?? 0.0,
-            ),
-          ],
-          total: (order['cantidad'] ?? 1) * 
-                ((productData?['precio'] as num?)?.toDouble() ?? 0.0),
-          status: order['estado'] ?? 'pedido',
-          createdAt: DateTime.parse(order['fecha']),
-          customerName: userData?['nombre']?.toString(),
-        );
-      }).toList();
-    } catch (e) {
-      debugPrint('Error al obtener pedidos: $e');
-      return [];
-    }
+      return Order(
+        id: order['id'].toString(),
+        restaurantId: order['id_restaurante'].toString(),
+        tableId: order['mesa']?.toString() ?? 'Sin mesa',
+        items: [
+          OrderItem(
+            productId: order['id_producto'].toString(),
+            productName: productData?['nombre'] ?? 'Producto desconocido',
+            quantity: order['cantidad'] ?? 1,
+            price: (productData?['precio'] as num?)?.toDouble() ?? 0.0,
+            orderItemId: order['id'].toString(), // Añadido este campo
+          ),
+        ],
+        total: (order['cantidad'] ?? 1) * 
+              ((productData?['precio'] as num?)?.toDouble() ?? 0.0),
+        status: order['estado'] ?? 'pedido',
+        createdAt: DateTime.parse(order['fecha']),
+        customerName: userData?['nombre']?.toString(),
+      );
+    }).toList();
+  } catch (e) {
+    debugPrint('Error al obtener pedidos: $e');
+    return [];
   }
+}
 
   Future<String> createOrder({
-    required String restaurantId,
-    required String productId,
-    required int quantity,
-    String? tableId,
-  }) async {
-    try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) throw Exception('Usuario no autenticado');
+  required String restaurantId,
+  required String productId,
+  required int quantity,
+  String? tableId,
+}) async {
+  try {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('Usuario no autenticado');
 
-      final response = await _supabase.from('Pedidos').insert({
-        'id_restaurante': restaurantId,
-        'id_producto': productId,
-        'id_usuario': user.id,
-        'cantidad': quantity,
-        'mesa': tableId,
-        'fecha': DateTime.now().toIso8601String(),
-        'estado': 'pedido',
-      }).select('id').single();
+    final response = await _supabase.from('Pedidos').insert({
+      'id_restaurante': restaurantId,
+      'id_producto': productId,
+      'id_usuario': user.id,
+      'cantidad': quantity,
+      'mesa': tableId,
+      'fecha': DateTime.now().toIso8601String(),
+      'estado': 'pedido',
+    }).select('id').single();
 
-      final newOrderId = response['id'].toString();
-      notifyListeners();
-      return newOrderId;
-    } catch (e) {
-      debugPrint('Error al crear pedido: $e');
-      throw Exception('No se pudo crear el pedido');
-    }
+    final newOrderId = response['id'].toString();
+    notifyListeners();
+    return newOrderId;
+  } catch (e) {
+    debugPrint('Error al crear pedido: $e');
+    throw Exception('No se pudo crear el pedido');
   }
+}
 
   Future<void> updateOrderStatus(String orderId, String newStatus) async {
     try {
