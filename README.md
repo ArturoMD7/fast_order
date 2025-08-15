@@ -1,4 +1,11 @@
-# FastOrder - Sistema de Pedidos para Restaurantes
+🍽️ FastOrder - Sistema de Pedidos para Restaurantes
+https://img.shields.io/badge/-Flutter-02569B?logo=flutter&logoColor=white
+https://img.shields.io/badge/-Dart-0175C2?logo=dart&logoColor=white
+https://img.shields.io/badge/-Supabase-3ECF8E?logo=supabase&logoColor=white
+https://img.shields.io/badge/-Firebase-FFCA28?logo=firebase&logoColor=black
+
+📱 Tecnologías Clave
+<div style="display: flex; justify-content: center; gap: 20px; margin: 20px 0;"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/flutter/flutter-original.svg" alt="Flutter" width="60" height="60"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/dart/dart-original.svg" alt="Dart" width="60" height="60"> <img src="https://supabase.com/favicon.ico" alt="Supabase" width="60" height="60"> <img src="https://www.vectorlogo.zone/logos/firebase/firebase-icon.svg" alt="Firebase" width="60" height="60"> </div>
 
 ## Descripción
 
