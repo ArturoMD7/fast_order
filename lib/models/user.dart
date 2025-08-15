@@ -1,15 +1,18 @@
 enum UserRole {
-  client('client'),
-  worker('worker'),
-  restaurantAdmin('restaurantAdmin');
+  client('cliente'),
+  worker('trabajador'),
+  restaurantAdmin('administrador'); // Coincide con el valor en DB
 
   final String value;
   const UserRole(this.value);
 
   factory UserRole.fromString(String value) {
-    return switch (value) {
+    return switch (value.toLowerCase()) {
       'client' => UserRole.client,
+      'cliente' => UserRole.client,
       'worker' => UserRole.worker,
+      'trabajador' => UserRole.worker,
+      'restaurantadmin' => UserRole.restaurantAdmin,
       'restaurant_admin' => UserRole.restaurantAdmin,
       'administrador' => UserRole.restaurantAdmin,
       _ => throw ArgumentError('Unknown UserRole value: $value'),
@@ -19,75 +22,116 @@ enum UserRole {
 
 class User {
   final String id;
-  final String name;
-  final String email;
-  final UserRole role;
-  final String? restaurantId; // Solo para workers y restaurantAdmin
   final DateTime createdAt;
+  final String name;
+  final String lastName;
+  final String email;
+  final String? phoneNumber;
+  final UserRole role;
+  final String? restaurantId;
+  final String? password; // Solo para uso interno, nunca debería exponerse
+  final String? qrToken;
+  final DateTime? qrGeneratedAt;
 
   User({
     required this.id,
+    required this.createdAt,
     required this.name,
+    required this.lastName,
     required this.email,
+    this.phoneNumber,
     required this.role,
     this.restaurantId,
-    required this.createdAt,
+    this.password,
+    this.qrToken,
+    this.qrGeneratedAt,
   });
 
-  // Constructor desde JSON (para datos de Supabase)
+  // Constructor desde JSON
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'] as String,
-      name: json['nombre'] as String, // Asume que en DB es 'nombre'
+      id: json['id'].toString(),
+      createdAt: DateTime.parse(json['created_at'].toString()),
+      name: json['nombre'] as String,
+      lastName: json['apellidos'] as String? ?? '',
       email: json['email'] as String,
-      role: UserRole.fromString(json['rol'] as String), // 'rol' en DB
-      restaurantId: json['id_restaurante'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      phoneNumber: json['num_telefono'] as String?,
+      role: UserRole.fromString(json['rol'].toString()),
+      restaurantId: json['id_restaurante']?.toString(),
+      password: json['contrasena'] as String?,
+      qrToken: json['token_qr_actual'] as String?,
+      qrGeneratedAt: json['fecha_qr_generado'] != null 
+          ? DateTime.parse(json['fecha_qr_generado'].toString())
+          : null,
     );
   }
 
-  // Convertir a JSON para Supabase
+  // Convertir a JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'created_at': createdAt.toIso8601String(),
       'nombre': name,
+      'apellidos': lastName,
       'email': email,
+      'num_telefono': phoneNumber,
       'rol': role.value,
       'id_restaurante': restaurantId,
-      'created_at': createdAt.toIso8601String(),
+      'contrasena': password,
+      'token_qr_actual': qrToken,
+      'fecha_qr_generado': qrGeneratedAt?.toIso8601String(),
     };
   }
 
-  // Método copyWith para actualizaciones inmutables
+  // Método copyWith
   User copyWith({
     String? id,
+    DateTime? createdAt,
     String? name,
+    String? lastName,
     String? email,
+    String? phoneNumber,
     UserRole? role,
     String? restaurantId,
-    DateTime? createdAt,
+    String? password,
+    String? qrToken,
+    DateTime? qrGeneratedAt,
   }) {
     return User(
       id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
       name: name ?? this.name,
+      lastName: lastName ?? this.lastName,
       email: email ?? this.email,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
       role: role ?? this.role,
       restaurantId: restaurantId ?? this.restaurantId,
-      createdAt: createdAt ?? this.createdAt,
+      password: password ?? this.password,
+      qrToken: qrToken ?? this.qrToken,
+      qrGeneratedAt: qrGeneratedAt ?? this.qrGeneratedAt,
     );
   }
 
-  // Helper para verificar roles
+  // Helpers para verificar roles
   bool get isClient => role == UserRole.client;
   bool get isWorker => role == UserRole.worker;
   bool get isRestaurantAdmin => role == UserRole.restaurantAdmin;
 
-  // Helper para UI
+
   String get roleDisplayName {
     return switch (role) {
-      UserRole.client => 'cliente',
-      UserRole.worker => 'trabajador',
-      UserRole.restaurantAdmin => 'administrador',
+      UserRole.client => 'Cliente',
+      UserRole.worker => 'Trabajador',
+      UserRole.restaurantAdmin => 'Administrador',
     };
+  }
+
+  String get fullName => '$name $lastName'.trim();
+
+  bool get hasValidQrToken {
+    if (qrToken == null || qrGeneratedAt == null) return false;
+    final now = DateTime.now();
+    final expiration = qrGeneratedAt!.add(const Duration(hours: 24)); // Token vale por 24 horas
+    return now.isBefore(expiration);
   }
 }
