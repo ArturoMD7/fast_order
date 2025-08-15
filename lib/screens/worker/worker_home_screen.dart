@@ -105,11 +105,12 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = const Color(0xFFD2691E);
     return Scaffold(
       appBar: AppBar(
         title: Text(_restaurantName),
         centerTitle: true,
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: primaryColor,
         actions: [
           IconButton(
             onPressed: () => _signOut(context),
@@ -125,12 +126,12 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.work_outline, size: 100, color: Colors.deepPurple),
+                  const Icon(Icons.work_outline, size: 100, color: Color(0xFFD2691E)),
                   const SizedBox(height: 16),
                   Text(
                     _greeting,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: Colors.deepPurple,
+                          color: Colors.black87,
                           fontWeight: FontWeight.bold,
                         ),
                   ),
@@ -194,7 +195,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
         icon: badgeCount != null
             ? Badge(
                 label: Text(badgeCount.toString()),
-                backgroundColor: Colors.deepOrange,
+                backgroundColor: Color(0xFFD2691E),
                 child: Icon(icon),
               )
             : Icon(icon),
@@ -203,7 +204,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
           style: const TextStyle(fontSize: 16),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.deepPurple,
+          backgroundColor: Color(0xFFD2691E),
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           shape: RoundedRectangleBorder(
