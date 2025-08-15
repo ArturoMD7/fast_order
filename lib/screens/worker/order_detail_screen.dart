@@ -15,21 +15,22 @@ class OrderDetailScreen extends StatelessWidget {
 
     // Simulación de orden, en producción cargar desde el servicio
     final order = Order(
-      id: orderId,
-      restaurantId: '1',
-      tableId: 'Mesa-5',
-      items: [
-        OrderItem(
-          productId: '101',
-          productName: 'Pizza Margarita',
-          quantity: 2,
-          price: 12.99,
-        ),
-      ],
-      total: 25.98,
-      status: 'preparing',
-      createdAt: DateTime.now().subtract(const Duration(minutes: 20)),
-    );
+    id: orderId,
+    restaurantId: '1',
+    tableId: 'Mesa-5',
+    items: [
+      OrderItem(
+        productId: '101',
+        productName: 'Pizza Margarita',
+        quantity: 2,
+        price: 12.99,
+        orderItemId: 'temp_101', // Añadido ID temporal
+      ),
+    ],
+    total: 25.98,
+    status: 'preparing',
+    createdAt: DateTime.now().subtract(const Duration(minutes: 20)),
+  );
 
     final primaryColor = Colors.deepPurple;
 
